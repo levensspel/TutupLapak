@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func ErrorHanlde(c *fiber.Ctx, err error) error {
+func ErrorHandler(c *fiber.Ctx, err error) error {
 
 	v := reflect.ValueOf(err)
 	if v.Kind() == reflect.Ptr && !v.IsNil() {
