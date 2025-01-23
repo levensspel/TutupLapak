@@ -3,19 +3,21 @@ package functionCallerInfo
 type FunctionCaller string
 
 const (
-	UserControllerRegisterByEmail   FunctionCaller = "userController.RegisterByEmail"
-	UserServiceRegisterByEmail      FunctionCaller = "userService.RegisterByEmail"
+	UserControllerRegisterByEmail FunctionCaller = "userController.RegisterByEmail"
+	UserControllerRegisterByPhone FunctionCaller = "userController.RegisterByPhone"
+	UserControllerLoginByEmail    FunctionCaller = "userController.LoginByEmail"
+	UserControllerLoginByPhone    FunctionCaller = "userController.LoginByPhone"
+	UserControllerLinkEmail       FunctionCaller = "userController.LinkEmail"
+
+	UserServiceRegisterByEmail FunctionCaller = "userService.RegisterByEmail"
+	UserServiceRegisterByPhone FunctionCaller = "userService.RegisterByPhone"
+	UserServiceLoginByEmail    FunctionCaller = "userService.LoginByEmail"
+	UserServiceLoginByPhone    FunctionCaller = "userService.LoginByPhone"
+	UserServiceLinkEmail       FunctionCaller = "userService.LinkEmail"
+
 	UserRepositoryCreateUserByEmail FunctionCaller = "userRepository.CreateUserByEmail"
-
-	UserControllerRegisterByPhone   FunctionCaller = "userController.RegisterByPhone"
-	UserServiceRegisterByPhone      FunctionCaller = "userService.RegisterByPhone"
 	UserRepositoryCreateUserByPhone FunctionCaller = "userRepository.CreateUserByPhone"
-
-	UserControllerLoginByEmail   FunctionCaller = "userController.LoginByEmail"
-	UserServiceLoginByEmail      FunctionCaller = "userService.LoginByEmail"
-	UserRepositoryGetAuthByEmail FunctionCaller = "userRepository.GetAuthByEmail"
-
-	UserControllerLoginByPhone   FunctionCaller = "userController.LoginByPhone"
-	UserServiceLoginByPhone      FunctionCaller = "userService.LoginByPhone"
-	UserRepositoryGetAuthByPhone FunctionCaller = "userRepository.GetAuthByPhone"
+	UserRepositoryGetAuthByEmail    FunctionCaller = "userRepository.GetAuthByEmail"
+	UserRepositoryGetAuthByPhone    FunctionCaller = "userRepository.GetAuthByPhone"
+	UserRepositoryUpdateEmail       FunctionCaller = "userRepository.UpdateEmail"
 )

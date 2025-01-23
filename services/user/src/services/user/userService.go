@@ -23,6 +23,8 @@ type UserServiceInterface interface {
 	RegisterByPhone(ctx *fiber.Ctx, input request.AuthByPhoneRequest) (response.AuthResponse, error)
 	LoginByEmail(ctx *fiber.Ctx, input request.AuthByEmailRequest) (response.AuthResponse, error)
 	LoginByPhone(ctx *fiber.Ctx, input request.AuthByPhoneRequest) (response.AuthResponse, error)
+
+	LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest, userId string) (response.UserResponse, error)
 }
 
 type userService struct {
@@ -187,4 +189,28 @@ func (us *userService) LoginByPhone(ctx *fiber.Ctx, input request.AuthByPhoneReq
 		Phone: input.Phone,
 		Token: token,
 	}, nil
+}
+
+func (us *userService) LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest, userId string) (response.UserResponse, error) {
+	err := validator.ValidateStructFields(input)
+	if err != nil {
+		return response.UserResponse{}, exceptions.ErrBadRequest(err.Error())
+	}
+
+	user, err := us.UserRepository.UpdateEmail(context.Background(), us.Db, input.Email, userId)
+	if err != nil {
+		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryUpdateEmail, err)
+
+		statusCode, message := helper.MapPgxError(err)
+		return response.UserResponse{}, exceptions.NewErrorResponse(statusCode, message)
+	}
+
+	if user == nil {
+		us.Logger.Error("User not found", functionCallerInfo.UserServiceLinkEmail)
+		return response.UserResponse{}, exceptions.NewNotFoundError("User not found", fiber.StatusNotFound)
+	}
+
+	response := helper.ConvertUserToResponse(user)
+
+	return response, nil
 }

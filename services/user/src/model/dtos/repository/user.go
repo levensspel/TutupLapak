@@ -11,3 +11,14 @@ type AuthByPhone struct {
 	HashPassword string
 	Email        string
 }
+
+type User struct {
+	Email             *string
+	Phone             *string
+	FileId            *string
+	FileUri           *string
+	FileThumbnailUri  *string
+	BankAccountName   *string
+	BankAccountHolder *string
+	BankAccountNumber *string
+}
