@@ -15,6 +15,7 @@ type UserRepositoryInterface interface {
 	GetAuthByPhone(ctx context.Context, pool *pgxpool.Pool, phone string) (auth repository.AuthByPhone, err error)
 	UpdateEmail(ctx context.Context, pool *pgxpool.Pool, email, userId string) (user *repository.User, err error)
 	UpdatePhone(ctx context.Context, pool *pgxpool.Pool, phone, userId string) (user *repository.User, err error)
+	GetUserProfile(ctx context.Context, pool *pgxpool.Pool, userId string) (user *repository.User, err error)
 }
 
 type UserRepository struct {
@@ -141,6 +142,38 @@ func (ur *UserRepository) UpdatePhone(ctx context.Context, pool *pgxpool.Pool, p
 	var user repository.User
 	err := pool.QueryRow(ctx, query, phone, userId).Scan(
 		&user.Email,
+		&user.FileId,
+		&user.FileUri,
+		&user.FileThumbnailUri,
+		&user.BankAccountName,
+		&user.BankAccountHolder,
+		&user.BankAccountNumber,
+	)
+	if err != nil {
+		return &repository.User{}, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) GetUserProfile(ctx context.Context, pool *pgxpool.Pool, userId string) (*repository.User, error) {
+	query := `
+		SELECT 
+			email,
+			phone,
+			fileId,
+			fileUri,
+			fileThumbnailUri,
+			bankAccountName,
+			bankAccountHolder,
+			bankAccountNumber
+		FROM users 
+		WHERE id = $1;`
+
+	var user repository.User
+	err := pool.QueryRow(ctx, query, userId).Scan(
+		&user.Email,
+		&user.Phone,
 		&user.FileId,
 		&user.FileUri,
 		&user.FileThumbnailUri,

@@ -9,6 +9,7 @@ const (
 	UserControllerLoginByPhone    FunctionCaller = "userController.LoginByPhone"
 	UserControllerLinkEmail       FunctionCaller = "userController.LinkEmail"
 	UserControllerLinkPhone       FunctionCaller = "userController.LinkPhone"
+	UserControllerGetUserProfile  FunctionCaller = "userController.GetUserProfile"
 
 	UserServiceRegisterByEmail FunctionCaller = "userService.RegisterByEmail"
 	UserServiceRegisterByPhone FunctionCaller = "userService.RegisterByPhone"
@@ -16,6 +17,7 @@ const (
 	UserServiceLoginByPhone    FunctionCaller = "userService.LoginByPhone"
 	UserServiceLinkEmail       FunctionCaller = "userService.LinkEmail"
 	UserServiceLinkPhone       FunctionCaller = "userService.LinkPhone"
+	UserServiceGetUserProfile  FunctionCaller = "userService.GetUserProfile"
 
 	UserRepositoryCreateUserByEmail FunctionCaller = "userRepository.CreateUserByEmail"
 	UserRepositoryCreateUserByPhone FunctionCaller = "userRepository.CreateUserByPhone"
@@ -23,4 +25,5 @@ const (
 	UserRepositoryGetAuthByPhone    FunctionCaller = "userRepository.GetAuthByPhone"
 	UserRepositoryUpdateEmail       FunctionCaller = "userRepository.UpdateEmail"
 	UserRepositoryUpdatePhone       FunctionCaller = "userRepository.UpdatePhone"
+	UserRepositoryGetUserProfile    FunctionCaller = "userRepository.GetUserProfile"
 )

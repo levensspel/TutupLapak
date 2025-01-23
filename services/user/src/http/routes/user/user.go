@@ -14,4 +14,5 @@ func SetRouteUsers(router fiber.Router, uc userController.UserControllerInterfac
 
 	router.Post("/user/link/email", middlewares.AuthMiddleware, uc.LinkEmail)
 	router.Post("/user/link/phone", middlewares.AuthMiddleware, uc.LinkPhone)
+	router.Get("/user", middlewares.AuthMiddleware, uc.GetUserProfile)
 }

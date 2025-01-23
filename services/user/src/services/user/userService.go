@@ -26,6 +26,7 @@ type UserServiceInterface interface {
 
 	LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest, userId string) (response.UserResponse, error)
 	LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest, userId string) (response.UserResponse, error)
+	GetUserProfile(ctx *fiber.Ctx, userId string) (response.UserResponse, error)
 }
 
 type userService struct {
@@ -238,6 +239,25 @@ func (us *userService) LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest,
 
 	response := helper.ConvertUserToResponse(user)
 	response.Phone = input.Phone
+
+	return response, nil
+}
+
+func (us *userService) GetUserProfile(ctx *fiber.Ctx, userId string) (response.UserResponse, error) {
+	user, err := us.UserRepository.GetUserProfile(context.Background(), us.Db, userId)
+	if err != nil {
+		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryGetUserProfile, err)
+
+		statusCode, message := helper.MapPgxError(err)
+		return response.UserResponse{}, exceptions.NewErrorResponse(statusCode, message)
+	}
+
+	if user == nil {
+		us.Logger.Error("Bad request", functionCallerInfo.UserServiceGetUserProfile)
+		return response.UserResponse{}, exceptions.NewBadRequestError("Bad request", fiber.StatusBadRequest)
+	}
+
+	response := helper.ConvertUserToResponse(user)
 
 	return response, nil
 }

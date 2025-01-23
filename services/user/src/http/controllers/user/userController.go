@@ -21,6 +21,7 @@ type UserControllerInterface interface {
 
 	LinkEmail(C *fiber.Ctx) error
 	LinkPhone(C *fiber.Ctx) error
+	GetUserProfile(C *fiber.Ctx) error
 }
 
 type UserController struct {
@@ -151,6 +152,22 @@ func (uc *UserController) LinkPhone(c *fiber.Ctx) error {
 	response, err := uc.userService.LinkPhone(c, userRequestParse, userId)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone, userRequestParse)
+		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (uc *UserController) GetUserProfile(c *fiber.Ctx) error {
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+	}
+
+	response, err := uc.userService.GetUserProfile(c, userId)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerGetUserProfile)
 		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 
