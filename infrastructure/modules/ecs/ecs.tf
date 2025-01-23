@@ -2,10 +2,19 @@ resource "aws_ecs_cluster" "tutuplapak_cluster" {
   name = "tutuplapak_cluster"
 }
 
-resource "aws_default_vpc" "default_vpc" {}
+resource "aws_vpc" "custom_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = {
+    Name = "tutuplapak-vpc"
+  }
+}
 
 resource "aws_subnet" "private_subnet" {
-  availability_zone = "ap-southeast-1a"
+  vpc_id            = aws_vpc.custom_vpc.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "ap-southeast-1"
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
@@ -32,7 +41,7 @@ resource "aws_lb_target_group" "target_group" {
   port        = "80"
   protocol    = "HTTP"
   target_type = "ip"
-  vpc_id      = aws_default_vpc.default_vpc.id
+  vpc_id      = aws_vpc.custom_vpc.id
 }
 
 resource "aws_lb_listener" "http_listener" {
@@ -102,7 +111,7 @@ resource "aws_ecs_task_definition" "task_definitions" {
   container_definitions    = jsonencode([
     {
       name  = each.value
-      image = "${aws_account_id}.dkr.ecr.ap-southeast-1.amazonaws.com/${each.value}:latest"
+      image = "024848467457.dkr.ecr.ap-southeast-1.amazonaws.com/${each.value}:latest"
       memory = var.service_configs[each.value].memory
       cpu    = var.service_configs[each.value].cpu
       essential = true
@@ -158,16 +167,16 @@ resource "aws_lb_listener_rule" "path_based_routing" {
   listener_arn = aws_lb_listener.http_listener.arn
   priority     = 10 + index(var.services, each.key)
 
-  conditions {
-    field  = "path-pattern"
-    values = [var.service_configs[each.key].path_pattern]
+  condition {
+    path_pattern {
+      values = [var.service_configs[each.key].path_pattern]
+    }
   }
 
-  actions {
+  action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.target_groups[each.value].arn
+    target_group_arn = aws_lb_target_group.target_groups[each.key].arn
   }
 }
 
 # Service End
-
