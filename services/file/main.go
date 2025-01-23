@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
+	"github.com/TimDebug/TutupLapak/File/src/database/migrations"
 	httpServer "github.com/TimDebug/TutupLapak/File/src/http"
 	log "github.com/TimDebug/TutupLapak/File/src/logger"
 )
@@ -31,11 +32,11 @@ func main() {
 	log.Logger.Info().Msg("configured logger from configuration")
 
 	// Auto migrate
-	// err = migrations.Migrate()
-	// if err != nil {
-	// 	log.Logger.Fatal().Err(err).Msg("unable to run migration files")
-	// }
-	// log.Logger.Info().Msg("successfully run migration files")
+	err = migrations.Migrate()
+	if err != nil {
+		log.Logger.Fatal().Err(err).Msg("unable to run migration files")
+	}
+	log.Logger.Info().Msg("successfully run migration files")
 
 	// Handle graceful shutdown
 	quit := make(chan os.Signal, 1)

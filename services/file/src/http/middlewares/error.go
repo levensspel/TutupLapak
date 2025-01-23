@@ -12,7 +12,7 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 		v = v.Elem()
 	}
 
-	statusField := v.FieldByName("StatusCode")
+	statusField := v.FieldByName("Code")
 	if statusField.IsValid() && statusField.CanInterface() {
 		statusCode := statusField.Interface().(int)
 		message := v.FieldByName("Message").Interface().(string)
