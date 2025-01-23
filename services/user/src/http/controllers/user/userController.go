@@ -20,6 +20,7 @@ type UserControllerInterface interface {
 	LoginByPhone(C *fiber.Ctx) error
 
 	LinkEmail(C *fiber.Ctx) error
+	LinkPhone(C *fiber.Ctx) error
 }
 
 type UserController struct {
@@ -127,6 +128,29 @@ func (uc *UserController) LinkEmail(c *fiber.Ctx) error {
 	response, err := uc.userService.LinkEmail(c, userRequestParse, userId)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkEmail, userRequestParse)
+		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (uc *UserController) LinkPhone(c *fiber.Ctx) error {
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+	}
+
+	userRequestParse := request.LinkPhoneRequest{}
+
+	if err := c.BodyParser(&userRequestParse); err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone)
+		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+	}
+
+	response, err := uc.userService.LinkPhone(c, userRequestParse, userId)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone, userRequestParse)
 		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 

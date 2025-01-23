@@ -8,16 +8,19 @@ const (
 	UserControllerLoginByEmail    FunctionCaller = "userController.LoginByEmail"
 	UserControllerLoginByPhone    FunctionCaller = "userController.LoginByPhone"
 	UserControllerLinkEmail       FunctionCaller = "userController.LinkEmail"
+	UserControllerLinkPhone       FunctionCaller = "userController.LinkPhone"
 
 	UserServiceRegisterByEmail FunctionCaller = "userService.RegisterByEmail"
 	UserServiceRegisterByPhone FunctionCaller = "userService.RegisterByPhone"
 	UserServiceLoginByEmail    FunctionCaller = "userService.LoginByEmail"
 	UserServiceLoginByPhone    FunctionCaller = "userService.LoginByPhone"
 	UserServiceLinkEmail       FunctionCaller = "userService.LinkEmail"
+	UserServiceLinkPhone       FunctionCaller = "userService.LinkPhone"
 
 	UserRepositoryCreateUserByEmail FunctionCaller = "userRepository.CreateUserByEmail"
 	UserRepositoryCreateUserByPhone FunctionCaller = "userRepository.CreateUserByPhone"
 	UserRepositoryGetAuthByEmail    FunctionCaller = "userRepository.GetAuthByEmail"
 	UserRepositoryGetAuthByPhone    FunctionCaller = "userRepository.GetAuthByPhone"
 	UserRepositoryUpdateEmail       FunctionCaller = "userRepository.UpdateEmail"
+	UserRepositoryUpdatePhone       FunctionCaller = "userRepository.UpdatePhone"
 )

@@ -13,3 +13,7 @@ type AuthByPhoneRequest struct {
 type LinkEmailRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+type LinkPhoneRequest struct {
+	Phone string `json:"phone" validate:"required,e164"`
+}
