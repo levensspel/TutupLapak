@@ -4,7 +4,35 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
+
+type Configuration struct {
+	Port                string
+	DBConnection        string
+	DBConnectionMigrate string
+	AutoMigrate         bool
+	MigrateFileLocation string
+	IsProduction        bool
+}
+
+var Config Configuration
+
+func New() error {
+	err := godotenv.Load()
+	if err != nil {
+		return err
+	}
+	Config = Configuration{}
+	Config.Port = GetPort()
+	Config.DBConnection = GetDBConnection()
+	Config.DBConnectionMigrate = GetDBConnectionMigrate()
+	Config.AutoMigrate = GetAutoMigrate()
+	Config.MigrateFileLocation = GetLocationMigrate()
+	Config.IsProduction = isProduction()
+	return nil
+}
 
 func getEnv(key string, defaultValue string) string {
 	value, exists := os.LookupEnv(key)
@@ -24,11 +52,8 @@ func GetDBConnection() string {
 	dbHost := getEnv("DB_HOST", "localhost")
 	dbPort := getEnv("DB_PORT", "5432")
 	dbName := getEnv("DB_NAME", "postgres")
-
 	databaseurl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
-
 	return databaseurl
-
 }
 
 func GetDBConnectionMigrate() string {
@@ -37,9 +62,7 @@ func GetDBConnectionMigrate() string {
 	dbHost := getEnv("DB_HOST", "localhost")
 	dbPort := getEnv("DB_PORT", "5432")
 	dbName := getEnv("DB_NAME", "postgres")
-
 	databaseurl := fmt.Sprintf("pgx://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
-
 	return databaseurl
 }
 
@@ -49,4 +72,8 @@ func GetAutoMigrate() bool {
 
 func GetLocationMigrate() string {
 	return getEnv("MIGRATION_FILE_PATH", "file://src/database/migrations")
+}
+
+func isProduction() bool {
+	return strings.ToUpper(getEnv("MODE", "DEBUG")) == "PRODUCTION"
 }

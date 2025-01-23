@@ -7,7 +7,6 @@ import (
 )
 
 func ErrorHandler(c *fiber.Ctx, err error) error {
-
 	v := reflect.ValueOf(err)
 	if v.Kind() == reflect.Ptr && !v.IsNil() {
 		v = v.Elem()
@@ -21,7 +20,6 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 		return c.JSON(map[string]interface{}{
 			"message": message,
 		})
-
 	}
 
 	c.Status(500)

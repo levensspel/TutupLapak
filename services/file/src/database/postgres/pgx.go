@@ -8,10 +8,9 @@ import (
 	"github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/samber/do/v2"
 )
 
-func NewPgxConnectInject(i do.Injector) (*pgxpool.Pool, error) {
+func NewPgxConnect() (*pgxpool.Pool, error) {
 	DbString := config.GetDBConnection()
 	fmt.Printf("Connection string: %s\n", DbString)
 	tempConn, err := pgx.Connect(context.Background(), DbString)
