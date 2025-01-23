@@ -88,7 +88,7 @@ func (uc *UserController) LoginByEmail(c *fiber.Ctx) error {
 	}
 
 	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusCreated).JSON(response)
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
 func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
@@ -106,5 +106,5 @@ func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
 	}
 
 	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusCreated).JSON(response)
+	return c.Status(fiber.StatusOK).JSON(response)
 }
