@@ -24,4 +24,6 @@ const (
 	ActivityRepositoryDelete FunctionCaller = "activityRepository.Delete"
 	ActivityServiceDelete    FunctionCaller = "activityService.Delete"
 	ActivityControllerDelete FunctionCaller = "activityController.Delete"
+
+	PurhcaseControllerPutCart FunctionCaller = "purchaseController.PutCart"
 )
