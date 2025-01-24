@@ -3,11 +3,14 @@ package httpServer
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"io"
 	"mime/multipart"
+	"strings"
 
+	"github.com/TimDebug/TutupLapak/File/src/logger"
+	"github.com/disintegration/imaging"
 	"github.com/gofiber/fiber/v2"
-	ffmpeg_go "github.com/u2takey/ffmpeg-go"
 )
 
 type FileEntity struct {
@@ -28,59 +31,68 @@ func NewFileService(repo FileRepository, storageClient StorageClient) FileServic
 	}
 }
 
-func (fs *FileService) UploadFile(ctx *fiber.Ctx, fileName string, file multipart.File, mimetype string) (*FileEntity, error) {
-	var entity *FileEntity
+func (fs *FileService) UploadFile(
+	ctx *fiber.Ctx,
+	originalFilename string,
+	targetFilename string,
+	file multipart.File,
+	mimetype string,
+) (*FileEntity, error) {
+	entity := new(FileEntity)
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
-	mainUri, err := fs.StorageClient.PutFile(ctx.Context(), fileName, mimetype, fileContent, true)
+	mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
+	logger.Logger.Info().Str("mainUri", mainUri).Msg("cek aja")
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
 	// compress file into thumbnail
-	fileBuf, err := fs.compressImage(file)
+	fileBuf, err := fs.compressImage(fileContent)
 	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: "unable to compress the file"}
+		return nil, &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
 	}
 	// upload the thumbnail to S3
-	thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", fileName)
-	thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf.Bytes(), true)
+	thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
+	thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
+	logger.Logger.Info().Str("thumbnailUri", thumbnailUri).Msg("cek aja")
 	entity.FileURI = mainUri
 	entity.ThumbnailURI = thumbnailUri
 	// TODO: store the record to database
 	return entity, nil
 }
 
-func (fs *FileService) compressImage(inputFile multipart.File) (*bytes.Buffer, error) {
-	// Create a buffer to store the compressed output
-	var outputBuffer bytes.Buffer
-
-	// Create an input buffer to store the file content
-	inputBuffer := &bytes.Buffer{}
-	_, err := io.Copy(inputBuffer, inputFile)
+func (fs *FileService) compressImage(content []byte) ([]byte, error) {
+	img, format, err := fs.decodeImage(content)
+	logger.Logger.Info().Str("format", format).Msg("cek doang")
 	if err != nil {
 		return nil, err
 	}
+	resizedWidth := int(float64(img.Bounds().Dx()) * 0.1)
+	resizedImg := imaging.Resize(img, resizedWidth, 0, imaging.Lanczos)
+	return fs.imageToBytes(resizedImg, format)
+}
 
-	// Use FFmpeg to compress the image
-	err = ffmpeg_go.
-		Input("pipe:0"). // Specify that input comes from a buffer
-		Output("pipe:1", ffmpeg_go.KwArgs{
-			"q:v": "5", // Set quality; adjust as needed
-		}).
-		WithInput(inputBuffer).    // Provide the input buffer
-		WithOutput(&outputBuffer). // Write output to the output buffer
-		OverWriteOutput().
-		Run()
-
+func (fs *FileService) imageToBytes(img image.Image, fileExt string) ([]byte, error) {
+	var buf bytes.Buffer
+	var err error
+	logger.Logger.Info().Str("file_ext", fileExt).Msg("cek file eks")
+	if strings.ToLower(fileExt) == "png" {
+		err = imaging.Encode(&buf, img, imaging.PNG)
+	} else {
+		err = imaging.Encode(&buf, img, imaging.JPEG)
+	}
 	if err != nil {
 		return nil, err
 	}
+	return buf.Bytes(), nil
+}
 
-	// Return the compressed image as a buffer
-	return &outputBuffer, nil
+func (fs *FileService) decodeImage(data []byte) (image.Image, string, error) {
+	reader := bytes.NewReader(data)
+	return image.Decode(reader)
 }

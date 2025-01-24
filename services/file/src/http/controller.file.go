@@ -70,11 +70,11 @@ func (f *FileController) Upload(ctx *fiber.Ctx) error {
 		}
 	}
 	uniqueFileName := uuid.New().String() + filepath.Ext(fileHeader.Filename)
-	mainEntity, err := f.Service.UploadFile(ctx, uniqueFileName, file, contentType)
+	mainEntity, err := f.Service.UploadFile(ctx, fileHeader.Filename, uniqueFileName, file, contentType)
 	if err != nil {
 		return &fiber.Error{
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to upload file",
+			Message: err.Error(),
 		}
 	}
 	return ctx.Status(fiber.StatusOK).
