@@ -1,9 +1,6 @@
 package httpServer
 
 import (
-	"database/sql"
-	"errors"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -40,10 +37,7 @@ func (r *FileRepository) GetRecordsById(ctx *fiber.Ctx, fileId string) (*FileEnt
 	entity := new(FileEntity)
 	err := row.Scan(&entity.FileID, &entity.FileURI, &entity.ThumbnailURI)
 	if err != nil {
-		if errors.Is(sql.ErrNoRows, err) {
-			return nil, fiber.ErrNotFound
-		}
-		return nil, fiber.ErrInternalServerError
+		return nil, err
 	}
 	return entity, nil
 }

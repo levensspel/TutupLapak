@@ -2,7 +2,6 @@ package httpServer
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -12,6 +11,8 @@ import (
 	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/disintegration/imaging"
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type FileEntity struct {
@@ -99,11 +100,16 @@ func (fs *FileService) CheckExist(ctx *fiber.Ctx, fileId string) (*FileEntity, e
 	}
 	entity, err := fs.Repo.GetRecordsById(ctx, fileId)
 	if err != nil {
-		if errors.Is(fiber.ErrNotFound, err) {
+		logger.Logger.Error().Err(err).Msg(fmt.Sprintf("%+v", err))
+		if err == pgx.ErrNoRows {
 			return nil, &fiber.Error{Code: 404, Message: "records not found"}
-		} else {
-			return nil, &fiber.Error{Code: 500, Message: "server error"}
 		}
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == "22P02" {
+				return nil, &fiber.Error{Code: 400, Message: "invalid fileId"}
+			}
+		}
+		return nil, &fiber.Error{Code: 500, Message: "server error"}
 	}
 	return entity, nil
 }
