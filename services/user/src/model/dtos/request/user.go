@@ -17,3 +17,10 @@ type LinkEmailRequest struct {
 type LinkPhoneRequest struct {
 	Phone string `json:"phone" validate:"required,e164"`
 }
+
+type UpdateUserProfileRequest struct {
+	FileId            string `json:"fileId"`
+	BankAccountName   string `json:"bankAccountName" validate:"required,min=4,max=32"`
+	BankAccountHolder string `json:"bankAccountHolder" validate:"required,min=4,max=32"`
+	BankAccountNumber string `json:"bankAccountNumber" validate:"required,min=4,max=32"`
+}

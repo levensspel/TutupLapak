@@ -6,6 +6,7 @@ import (
 	userController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user"
 	loggerZap "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/zap"
 	userRepository "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/repositories/user"
+	fileService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/external/file"
 	userService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/user"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/samber/do/v2"
@@ -38,4 +39,8 @@ func init() {
 	//? Setup Controller/Handler
 	//? User Controller
 	do.Provide[userController.UserControllerInterface](Injector, userController.NewUserControllerInject)
+
+	//? Setup Services
+	//? File Service
+	do.Provide[fileService.FileServiceInterface](Injector, fileService.NewFileServiceInject)
 }

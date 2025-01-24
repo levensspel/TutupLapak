@@ -13,3 +13,9 @@ func getEnv(key string, defaultValue string) string {
 func GetPort() string {
 	return getEnv("PORT", "8080")
 }
+
+func GetFileServiceBaseURL() string {
+	return getEnv("FILE_SERVICE_BASE_URL", "")
+}
+
+var FILE_SERVICE_BASE_URL string

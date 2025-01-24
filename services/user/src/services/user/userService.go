@@ -2,15 +2,18 @@ package userService
 
 import (
 	"context"
+	"fmt"
 
 	authJwt "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/auth/jwt"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/exceptions"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/helper"
 	functionCallerInfo "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/helper"
 	loggerZap "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/zap"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/repository"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/request"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
 	userRepository "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/repositories/user"
+	fileService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/external/file"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/user/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,26 +30,41 @@ type UserServiceInterface interface {
 	LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest, userId string) (response.UserResponse, error)
 	LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest, userId string) (response.UserResponse, error)
 	GetUserProfile(ctx *fiber.Ctx, userId string) (response.UserResponse, error)
+	UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error)
 }
 
 type userService struct {
 	UserRepository userRepository.UserRepositoryInterface
 	Db             *pgxpool.Pool
 	jwtService     authJwt.JwtServiceInterface
+	fileService    fileService.FileServiceInterface
 	Logger         loggerZap.LoggerInterface
 }
 
-func NewUserService(userRepo userRepository.UserRepositoryInterface, db *pgxpool.Pool, jwtService authJwt.JwtServiceInterface, logger loggerZap.LoggerInterface) UserServiceInterface {
-	return &userService{UserRepository: userRepo, Db: db, jwtService: jwtService, Logger: logger}
+func NewUserService(
+	userRepo userRepository.UserRepositoryInterface,
+	db *pgxpool.Pool,
+	jwtService authJwt.JwtServiceInterface,
+	fileService fileService.FileServiceInterface,
+	logger loggerZap.LoggerInterface,
+) UserServiceInterface {
+	return &userService{
+		UserRepository: userRepo,
+		Db:             db,
+		jwtService:     jwtService,
+		fileService:    fileService,
+		Logger:         logger,
+	}
 }
 
 func NewUserServiceInject(i do.Injector) (UserServiceInterface, error) {
 	_db := do.MustInvoke[*pgxpool.Pool](i)
 	_userRepo := do.MustInvoke[userRepository.UserRepositoryInterface](i)
 	_jwtService := do.MustInvoke[authJwt.JwtServiceInterface](i)
+	_fileService := do.MustInvoke[fileService.FileServiceInterface](i)
 	_logger := do.MustInvoke[loggerZap.LoggerInterface](i)
 
-	return NewUserService(_userRepo, _db, _jwtService, _logger), nil
+	return NewUserService(_userRepo, _db, _jwtService, _fileService, _logger), nil
 }
 
 func (us *userService) RegisterByEmail(ctx *fiber.Ctx, input request.AuthByEmailRequest) (response.AuthResponse, error) {
@@ -254,6 +272,52 @@ func (us *userService) GetUserProfile(ctx *fiber.Ctx, userId string) (response.U
 
 	if user == nil {
 		us.Logger.Error("Bad request", functionCallerInfo.UserServiceGetUserProfile)
+		return response.UserResponse{}, exceptions.NewBadRequestError("Bad request", fiber.StatusBadRequest)
+	}
+
+	response := helper.ConvertUserToResponse(user)
+
+	return response, nil
+}
+
+func (us *userService) UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error) {
+	err := validator.ValidateStructFields(input)
+	if err != nil {
+		return response.UserResponse{}, exceptions.ErrBadRequest(err.Error())
+	}
+
+	updateUser := repository.UpdateUser{
+		BankAccountName:   &input.BankAccountName,
+		BankAccountHolder: &input.BankAccountHolder,
+		BankAccountNumber: &input.BankAccountNumber,
+	}
+
+	if input.FileId != "" {
+		file, statusCode := us.fileService.GetFile(ctx, input.FileId)
+		fmt.Println("status", statusCode)
+		if statusCode != fiber.StatusOK {
+			if statusCode != fiber.StatusBadRequest {
+				statusCode = fiber.StatusInternalServerError
+			}
+			// *Logging is done in the fileService implementation
+			return response.UserResponse{}, exceptions.NewErrorResponse(int16(statusCode), "File error")
+		}
+
+		updateUser.FileId = &input.FileId
+		updateUser.FileUri = &file.FileUri
+		updateUser.FileThumbnailUri = &file.FileThumbnailUri
+	}
+
+	user, err := us.UserRepository.UpdateUserProfile(context.Background(), us.Db, updateUser, userId)
+	if err != nil {
+		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryUpdateUserProfile, err)
+
+		statusCode, message := helper.MapPgxError(err)
+		return response.UserResponse{}, exceptions.NewErrorResponse(statusCode, message)
+	}
+
+	if user == nil {
+		us.Logger.Error("Bad request", functionCallerInfo.UserServiceUpdateUserProfile)
 		return response.UserResponse{}, exceptions.NewBadRequestError("Bad request", fiber.StatusBadRequest)
 	}
 

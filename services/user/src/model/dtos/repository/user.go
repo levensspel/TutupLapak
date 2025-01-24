@@ -22,3 +22,12 @@ type User struct {
 	BankAccountHolder *string
 	BankAccountNumber *string
 }
+
+type UpdateUser struct {
+	FileId            *string
+	FileUri           *string
+	FileThumbnailUri  *string
+	BankAccountName   *string
+	BankAccountHolder *string
+	BankAccountNumber *string
+}
