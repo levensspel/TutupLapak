@@ -18,7 +18,6 @@ func main() {
 		log.Logger.Fatal().Err(err).Msg("unable to init basic logger")
 	}
 	log.Logger.Info().Msg("configured basic logger")
-	defer log.Cleanup()
 
 	// Initialize app configurations
 	err = config.New()
@@ -42,7 +41,8 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-quit
+		oscall := <-quit
+		log.Logger.Warn().Msgf("system call:%+v", oscall)
 		log.Cleanup()
 		os.Exit(0)
 	}()

@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"io"
 	"os"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 var (
-	logFile *os.File
+	LogFile *os.File
 	Logger  zerolog.Logger
 )
 
@@ -24,28 +23,27 @@ func Init() error {
 }
 
 func Add(conf config.Configuration) {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.TimeFieldFormat = time.RFC3339
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	if conf.IsProduction {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	} else {
-		zerolog.TimeFieldFormat = time.RFC3339
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 }
 
 func initMultiWriter() error {
-	logFile, err := os.OpenFile("log/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	LogFile, err := os.OpenFile("log/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
-	multi := io.MultiWriter(logFile, os.Stdout)
+	// multi := io.MultiWriter(LogFile, os.Stdout)
+	multi := zerolog.MultiLevelWriter(LogFile, os.Stdout)
 	Logger = zerolog.New(multi).With().Timestamp().Logger()
 	return nil
 }
 
 func Cleanup() {
-	if logFile != nil {
-		logFile.Close()
+	if LogFile != nil {
+		LogFile.Close()
 	}
 }

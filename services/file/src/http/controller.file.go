@@ -32,7 +32,7 @@ func (f *FileController) Upload(ctx *fiber.Ctx) error {
 		}
 		return &fiber.Error{Code: code, Message: "Got an error"}
 	}
-	return ctx.Status(http.StatusOK).JSON(fiber.Map{"status": "OK"})
+	return ctx.Status(http.StatusOK).JSON(fiber.Map{"code": http.StatusOK, "message": "OK"})
 }
 
 func randRange(min, max int) int {
