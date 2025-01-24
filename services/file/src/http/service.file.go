@@ -38,13 +38,11 @@ func (fs *FileService) UploadFile(
 	file multipart.File,
 	mimetype string,
 ) (*FileEntity, error) {
-	entity := new(FileEntity)
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
 	mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
-	logger.Logger.Info().Str("mainUri", mainUri).Msg("cek aja")
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
@@ -59,11 +57,8 @@ func (fs *FileService) UploadFile(
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
-	logger.Logger.Info().Str("thumbnailUri", thumbnailUri).Msg("cek aja")
-	entity.FileURI = mainUri
-	entity.ThumbnailURI = thumbnailUri
-	// TODO: store the record to database
-	return entity, nil
+	// store the record
+	return fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
 }
 
 func (fs *FileService) compressImage(content []byte) ([]byte, error) {
