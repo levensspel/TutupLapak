@@ -1,0 +1,131 @@
+definitions:
+  request.CartDto:
+    properties:
+      purchasedItems:
+        description: 'array | minItems: 1'
+        items:
+          $ref: '#/definitions/request.PurchasedItem'
+        minItems: 1
+        type: array
+      senderContactDetail:
+        description: string | required | validates based on contact type
+        type: string
+      senderContactType:
+        description: 'string | required | enum: "email" / "phone"'
+        enum:
+        - email
+        - phone
+        type: string
+      senderName:
+        description: 'string | required | minLength: 4 | maxLength: 55'
+        maxLength: 55
+        minLength: 4
+        type: string
+    required:
+    - purchasedItems
+    - senderContactDetail
+    - senderContactType
+    - senderName
+    type: object
+  request.PurchasedItem:
+    properties:
+      productId:
+        description: string | required | should be a valid productId
+        type: string
+      qty:
+        description: 'number | required | min: 2'
+        minimum: 2
+        type: integer
+    required:
+    - productId
+    - qty
+    type: object
+  response.PaymentDetailDTO:
+    properties:
+      bankAccountHolder:
+        type: string
+      bankAccountName:
+        type: string
+      bankAccountNumber:
+        type: string
+      totalPrice:
+        type: number
+    type: object
+  response.PurchaseResponseDTO:
+    properties:
+      paymentDetails:
+        items:
+          $ref: '#/definitions/response.PaymentDetailDTO'
+        type: array
+      purchaseId:
+        type: string
+      purchasedItems:
+        items:
+          $ref: '#/definitions/response.PurchasedItemDTO'
+        type: array
+      totalPrice:
+        type: number
+    type: object
+  response.PurchasedItemDTO:
+    properties:
+      category:
+        type: string
+      createdAt:
+        type: string
+      fileId:
+        type: string
+      fileThumbnailUri:
+        type: string
+      fileUri:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      productId:
+        type: string
+      qty:
+        type: integer
+      sku:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /v1/purchase:
+    post:
+      consumes:
+      - application/json
+      description: Pembeli akan memasukkan detail produk dan jumlah yang akan dibeli,
+        kemudian mengembalikan daftar detail produk beserta dengan daftar detail bank
+        dari masing-masing penjual
+      parameters:
+      - description: Cart Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CartDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: success response
+          schema:
+            $ref: '#/definitions/response.PurchaseResponseDTO'
+        "400":
+          description: bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Add items to the cart
+      tags:
+      - Purchase
+swagger: "2.0"
