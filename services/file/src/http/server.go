@@ -40,12 +40,12 @@ func (s *HttpServer) Listen() {
 	appConfig := config.Config
 	var storageClient StorageClient
 	if appConfig.IsProduction {
-		storageClient = &S3StorageClient{Config: appConfig}
+		storageClient = NewS3StorageClient()
 	} else {
-		storageClient = nil
+		storageClient = NewMockS3StorageClient()
 	}
 	repo := NewFileRepository(db)
-	service := NewFileService(repo, db, storageClient)
+	service := NewFileService(repo, storageClient)
 	controller := NewFileController(service)
 
 	routes := app.Group("/v1")

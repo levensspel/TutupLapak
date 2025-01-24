@@ -15,6 +15,10 @@ type Configuration struct {
 	AutoMigrate         bool
 	MigrateFileLocation string
 	IsProduction        bool
+	AWSAccessKey        string
+	AWSSecretAccessKey  string
+	AWSRegion           string
+	AWSBucket           string
 }
 
 var Config Configuration
@@ -31,6 +35,10 @@ func New() error {
 	Config.AutoMigrate = GetAutoMigrate()
 	Config.MigrateFileLocation = GetLocationMigrate()
 	Config.IsProduction = isProduction()
+	Config.AWSAccessKey = getEnv("AWS_ACCESS_KEY_ID", "")
+	Config.AWSSecretAccessKey = getEnv("AWS_SECRET_ACCESS_KEY", "")
+	Config.AWSRegion = getEnv("AWS_REGION", "")
+	Config.AWSBucket = getEnv("AWS_BUCKET", "")
 	return nil
 }
 
