@@ -6,6 +6,6 @@ import (
 )
 
 func SetRoutePurchase(router fiber.Router, controller appController.IPurchaseController) {
-	router.Post("/purhcase", controller.Cart)
+	router.Post("/purchase", controller.Cart)
 	// router.Post("/purchase/:purchaseId", controller.Payment)
 }
