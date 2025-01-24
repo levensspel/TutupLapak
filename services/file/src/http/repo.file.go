@@ -1,6 +1,9 @@
 package httpServer
 
 import (
+	"database/sql"
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -25,4 +28,22 @@ func (r *FileRepository) InsertURI(ctx *fiber.Ctx, fileUri string, thumbnailUri 
 	row := r.DB.QueryRow(ctx.Context(), query, fileUri, thumbnailUri)
 	err := row.Scan(&entity.FileID, &entity.FileURI, &entity.ThumbnailURI)
 	return entity, err
+}
+
+func (r *FileRepository) GetRecordsById(ctx *fiber.Ctx, fileId string) (*FileEntity, error) {
+	query := `
+		SELECT id, fileuri, thumbnailuri
+		FROM files
+		WHERE id = $1;
+	`
+	row := r.DB.QueryRow(ctx.Context(), query, fileId)
+	entity := new(FileEntity)
+	err := row.Scan(&entity.FileID, &entity.FileURI, &entity.ThumbnailURI)
+	if err != nil {
+		if errors.Is(sql.ErrNoRows, err) {
+			return nil, fiber.ErrNotFound
+		}
+		return nil, fiber.ErrInternalServerError
+	}
+	return entity, nil
 }

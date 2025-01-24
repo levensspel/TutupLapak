@@ -25,7 +25,7 @@ func (s *HttpServer) Listen() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "*",
 		AllowCredentials: false,
-		AllowMethods:     "POST",
+		AllowMethods:     "GET,POST",
 	}))
 	app.Use(logger.New(logger.Config{
 		Done:          localLog.ZerologWriter,
@@ -50,6 +50,7 @@ func (s *HttpServer) Listen() {
 
 	routes := app.Group("/v1")
 	routes.Post("/file", controller.Upload)
+	routes.Get("/file/:fileId", controller.CheckExist)
 
 	app.Listen(fmt.Sprintf("%s:%s", "0.0.0.0", config.GetPort()))
 }

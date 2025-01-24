@@ -2,6 +2,7 @@ package httpServer
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -90,4 +91,19 @@ func (fs *FileService) imageToBytes(img image.Image, fileExt string) ([]byte, er
 func (fs *FileService) decodeImage(data []byte) (image.Image, string, error) {
 	reader := bytes.NewReader(data)
 	return image.Decode(reader)
+}
+
+func (fs *FileService) CheckExist(ctx *fiber.Ctx, fileId string) (*FileEntity, error) {
+	if fileId == "" {
+		return nil, &fiber.Error{Code: 400, Message: "invalid fileId"}
+	}
+	entity, err := fs.Repo.GetRecordsById(ctx, fileId)
+	if err != nil {
+		if errors.Is(fiber.ErrNotFound, err) {
+			return nil, &fiber.Error{Code: 404, Message: "records not found"}
+		} else {
+			return nil, &fiber.Error{Code: 500, Message: "server error"}
+		}
+	}
+	return entity, nil
 }
