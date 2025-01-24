@@ -21,6 +21,11 @@ type ServerInterface interface {
 type HttpServer struct{}
 
 func (s *HttpServer) Listen() {
+	config.FILE_SERVICE_BASE_URL = config.GetFileServiceBaseURL()
+	if config.FILE_SERVICE_BASE_URL == "" {
+		panic("FILE_SERVICE_BASE_URL value requires to be set")
+	}
+
 	fmt.Printf("New Fiber\n")
 	app := fiber.New(fiber.Config{
 		ServerHeader: helper.X_AUTHOR_HEADER_VALUE,

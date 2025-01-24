@@ -13,6 +13,10 @@ type UserRepositoryInterface interface {
 	CreateUserByPhone(ctx context.Context, pool *pgxpool.Pool, phone, passwordHash string) (userId string, err error)
 	GetAuthByEmail(ctx context.Context, pool *pgxpool.Pool, email string) (auth repository.AuthByEmail, err error)
 	GetAuthByPhone(ctx context.Context, pool *pgxpool.Pool, phone string) (auth repository.AuthByPhone, err error)
+	UpdateEmail(ctx context.Context, pool *pgxpool.Pool, email, userId string) (user *repository.User, err error)
+	UpdatePhone(ctx context.Context, pool *pgxpool.Pool, phone, userId string) (user *repository.User, err error)
+	GetUserProfile(ctx context.Context, pool *pgxpool.Pool, userId string) (user *repository.User, err error)
+	UpdateUserProfile(ctx context.Context, pool *pgxpool.Pool, input repository.UpdateUser, userId string) (*repository.User, error)
 }
 
 type UserRepository struct {
@@ -89,4 +93,163 @@ func (ur *UserRepository) GetAuthByPhone(ctx context.Context, pool *pgxpool.Pool
 	}
 
 	return auth, nil
+}
+
+func (ur *UserRepository) UpdateEmail(ctx context.Context, pool *pgxpool.Pool, email, userId string) (*repository.User, error) {
+	query := `
+		UPDATE users 
+		SET email = $1 
+		WHERE id = $2 
+		RETURNING
+			phone,
+			fileId,
+			fileUri,
+			fileThumbnailUri,
+			bankAccountName,
+			bankAccountHolder,
+			bankAccountNumber;`
+
+	var user repository.User
+	err := pool.QueryRow(ctx, query, email, userId).Scan(
+		&user.Phone,
+		&user.FileId,
+		&user.FileUri,
+		&user.FileThumbnailUri,
+		&user.BankAccountName,
+		&user.BankAccountHolder,
+		&user.BankAccountNumber,
+	)
+	if err != nil {
+		return &repository.User{}, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) UpdatePhone(ctx context.Context, pool *pgxpool.Pool, phone, userId string) (*repository.User, error) {
+	query := `
+		UPDATE users 
+		SET phone = $1 
+		WHERE id = $2 
+		RETURNING
+			email,
+			fileId,
+			fileUri,
+			fileThumbnailUri,
+			bankAccountName,
+			bankAccountHolder,
+			bankAccountNumber;`
+
+	var user repository.User
+	err := pool.QueryRow(ctx, query, phone, userId).Scan(
+		&user.Email,
+		&user.FileId,
+		&user.FileUri,
+		&user.FileThumbnailUri,
+		&user.BankAccountName,
+		&user.BankAccountHolder,
+		&user.BankAccountNumber,
+	)
+	if err != nil {
+		return &repository.User{}, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) GetUserProfile(ctx context.Context, pool *pgxpool.Pool, userId string) (*repository.User, error) {
+	query := `
+		SELECT 
+			email,
+			phone,
+			fileId,
+			fileUri,
+			fileThumbnailUri,
+			bankAccountName,
+			bankAccountHolder,
+			bankAccountNumber
+		FROM users 
+		WHERE id = $1;`
+
+	var user repository.User
+	err := pool.QueryRow(ctx, query, userId).Scan(
+		&user.Email,
+		&user.Phone,
+		&user.FileId,
+		&user.FileUri,
+		&user.FileThumbnailUri,
+		&user.BankAccountName,
+		&user.BankAccountHolder,
+		&user.BankAccountNumber,
+	)
+	if err != nil {
+		return &repository.User{}, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) UpdateUserProfile(ctx context.Context, pool *pgxpool.Pool, input repository.UpdateUser, userId string) (*repository.User, error) {
+	// Target query:
+	// `UPDATE users
+	// 	SET
+	// 		bankAccountName = $1,
+	// 		bankAccountHolder = $2,
+	// 		bankAccountNumber = $3,
+	// 		fileId = $5,
+	// 		fileUri = $6,
+	// 		fileThumbnailUri = $7,
+	// 	WHERE id = $4
+	// 	RETURNING
+	// 		email,
+	// 		phone,
+	//		fileId,
+	// 		fileUri,
+	// 		fileThumbnailUri;`
+
+	query := `
+		UPDATE users 
+		SET
+			bankAccountName = $1,
+			bankAccountHolder = $2,
+			bankAccountNumber = $3`
+
+	args := make([]interface{}, 4)
+	args[0] = input.BankAccountName
+	args[1] = input.BankAccountHolder
+	args[2] = input.BankAccountNumber
+	args[3] = userId
+
+	if input.FileId != nil {
+		query += `,
+			fileId = $5,
+			fileUri = $6,
+			fileThumbnailUri = $7`
+		args = append(args, input.FileId, input.FileUri, input.FileThumbnailUri)
+	}
+
+	query += `
+		WHERE id = $4
+		RETURNING
+			email,
+			phone,
+			fileId,
+			fileUri,
+			fileThumbnailUri;`
+
+	user := &repository.User{
+		BankAccountName:   input.BankAccountName,
+		BankAccountHolder: input.BankAccountHolder,
+		BankAccountNumber: input.BankAccountNumber,
+	}
+	err := pool.QueryRow(
+		ctx,
+		query,
+		args...,
+	).Scan(&user.Email, &user.Phone, &user.FileId, &user.FileUri, &user.FileThumbnailUri)
+	if err != nil {
+		return &repository.User{}, err
+	}
+
+	return user, nil
 }
