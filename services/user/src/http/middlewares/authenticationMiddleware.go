@@ -52,7 +52,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	}
 
 	userId := claims["userId"].(string)
-	fmt.Printf("userId: %s", userId)
+	fmt.Println("userId: ", userId)
 	c.Locals("userId", userId)
 
 	return c.Next()

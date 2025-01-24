@@ -8,6 +8,7 @@ import (
 	functionCallerInfo "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/helper"
 	loggerZap "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/zap"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/request"
+	fileService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/external/file"
 	userService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/samber/do/v2"
@@ -18,21 +19,28 @@ type UserControllerInterface interface {
 	RegisterByPhone(C *fiber.Ctx) error
 	LoginByEmail(C *fiber.Ctx) error
 	LoginByPhone(C *fiber.Ctx) error
+
+	LinkEmail(C *fiber.Ctx) error
+	LinkPhone(C *fiber.Ctx) error
+	GetUserProfile(C *fiber.Ctx) error
+	UpdateUserProfile(C *fiber.Ctx) error
 }
 
 type UserController struct {
 	userService userService.UserServiceInterface
+	fileService fileService.FileServiceInterface
 	logger      loggerZap.LoggerInterface
 }
 
-func NewUserController(userService userService.UserServiceInterface, logger loggerZap.LoggerInterface) UserControllerInterface {
+func NewUserController(userService userService.UserServiceInterface, fileService fileService.FileServiceInterface, logger loggerZap.LoggerInterface) UserControllerInterface {
 	return &UserController{userService: userService, logger: logger}
 }
 
 func NewUserControllerInject(i do.Injector) (UserControllerInterface, error) {
 	_userService := do.MustInvoke[userService.UserServiceInterface](i)
+	_fileService := do.MustInvoke[fileService.FileServiceInterface](i)
 	_logger := do.MustInvoke[loggerZap.LoggerInterface](i)
-	return NewUserController(_userService, _logger), nil
+	return NewUserController(_userService, _fileService, _logger), nil
 }
 
 func (uc *UserController) RegisterByEmail(c *fiber.Ctx) error {
@@ -102,6 +110,91 @@ func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
 	response, err := uc.userService.LoginByPhone(c, userRequestParse)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLoginByPhone, userRequestParse)
+		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (uc *UserController) LinkEmail(c *fiber.Ctx) error {
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+	}
+
+	userRequestParse := request.LinkEmailRequest{}
+
+	if err := c.BodyParser(&userRequestParse); err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkEmail)
+		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+	}
+
+	response, err := uc.userService.LinkEmail(c, userRequestParse, userId)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkEmail, userRequestParse)
+		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (uc *UserController) LinkPhone(c *fiber.Ctx) error {
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+	}
+
+	userRequestParse := request.LinkPhoneRequest{}
+
+	if err := c.BodyParser(&userRequestParse); err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone)
+		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+	}
+
+	response, err := uc.userService.LinkPhone(c, userRequestParse, userId)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone, userRequestParse)
+		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (uc *UserController) GetUserProfile(c *fiber.Ctx) error {
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+	}
+
+	response, err := uc.userService.GetUserProfile(c, userId)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerGetUserProfile)
+		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (uc *UserController) UpdateUserProfile(c *fiber.Ctx) error {
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+	}
+
+	userRequestParse := request.UpdateUserProfileRequest{}
+
+	if err := c.BodyParser(&userRequestParse); err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerUpdateUserProfile)
+		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+	}
+
+	response, err := uc.userService.UpdateUserProfile(c, userRequestParse, userId)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerUpdateUserProfile)
 		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 

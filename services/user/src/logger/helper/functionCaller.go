@@ -4,18 +4,31 @@ type FunctionCaller string
 
 const (
 	UserControllerRegisterByEmail   FunctionCaller = "userController.RegisterByEmail"
-	UserServiceRegisterByEmail      FunctionCaller = "userService.RegisterByEmail"
-	UserRepositoryCreateUserByEmail FunctionCaller = "userRepository.CreateUserByEmail"
-
 	UserControllerRegisterByPhone   FunctionCaller = "userController.RegisterByPhone"
-	UserServiceRegisterByPhone      FunctionCaller = "userService.RegisterByPhone"
-	UserRepositoryCreateUserByPhone FunctionCaller = "userRepository.CreateUserByPhone"
+	UserControllerLoginByEmail      FunctionCaller = "userController.LoginByEmail"
+	UserControllerLoginByPhone      FunctionCaller = "userController.LoginByPhone"
+	UserControllerLinkEmail         FunctionCaller = "userController.LinkEmail"
+	UserControllerLinkPhone         FunctionCaller = "userController.LinkPhone"
+	UserControllerGetUserProfile    FunctionCaller = "userController.GetUserProfile"
+	UserControllerUpdateUserProfile FunctionCaller = "userController.UpdateUserProfile"
 
-	UserControllerLoginByEmail   FunctionCaller = "userController.LoginByEmail"
+	UserServiceRegisterByEmail   FunctionCaller = "userService.RegisterByEmail"
+	UserServiceRegisterByPhone   FunctionCaller = "userService.RegisterByPhone"
 	UserServiceLoginByEmail      FunctionCaller = "userService.LoginByEmail"
-	UserRepositoryGetAuthByEmail FunctionCaller = "userRepository.GetAuthByEmail"
-
-	UserControllerLoginByPhone   FunctionCaller = "userController.LoginByPhone"
 	UserServiceLoginByPhone      FunctionCaller = "userService.LoginByPhone"
-	UserRepositoryGetAuthByPhone FunctionCaller = "userRepository.GetAuthByPhone"
+	UserServiceLinkEmail         FunctionCaller = "userService.LinkEmail"
+	UserServiceLinkPhone         FunctionCaller = "userService.LinkPhone"
+	UserServiceGetUserProfile    FunctionCaller = "userService.GetUserProfile"
+	UserServiceUpdateUserProfile FunctionCaller = "userService.UpdateUserProfile"
+
+	ExternalFileServiceGetFile FunctionCaller = "externalFileService.GetFile"
+
+	UserRepositoryCreateUserByEmail FunctionCaller = "userRepository.CreateUserByEmail"
+	UserRepositoryCreateUserByPhone FunctionCaller = "userRepository.CreateUserByPhone"
+	UserRepositoryGetAuthByEmail    FunctionCaller = "userRepository.GetAuthByEmail"
+	UserRepositoryGetAuthByPhone    FunctionCaller = "userRepository.GetAuthByPhone"
+	UserRepositoryUpdateEmail       FunctionCaller = "userRepository.UpdateEmail"
+	UserRepositoryUpdatePhone       FunctionCaller = "userRepository.UpdatePhone"
+	UserRepositoryGetUserProfile    FunctionCaller = "userRepository.GetUserProfile"
+	UserRepositoryUpdateUserProfile FunctionCaller = "userRepository.UpdateUserProfile"
 )
