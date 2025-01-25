@@ -2,6 +2,8 @@ package httpServer
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/TimDebug/FitByte/src/config"
 	"github.com/TimDebug/FitByte/src/di"
@@ -11,7 +13,9 @@ import (
 	purchaseRoute "github.com/TimDebug/FitByte/src/http/routes/purchase"
 	response "github.com/TimDebug/FitByte/src/model/web"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/samber/do/v2"
 )
 
@@ -36,6 +40,17 @@ func (s *HttpServer) Listen() {
 	}))
 
 	// app.Use(middlewares.RequestLogger)
+	app.Use(cache.New(cache.Config{
+		ExpirationGenerator: func(c *fiber.Ctx, cfg *cache.Config) time.Duration {
+			newCacheTime, _ := strconv.Atoi(c.GetRespHeader("Cache-Time", "600"))
+			return time.Second * time.Duration(newCacheTime)
+		},
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return utils.CopyString(c.Path())
+		},
+		CacheControl: true,
+		Expiration:   10 * time.Second,
+	}))
 
 	fmt.Printf("Inject Controllers\n")
 	pc := do.MustInvoke[appController.IPurchaseController](di.Injector)
