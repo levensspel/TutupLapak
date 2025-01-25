@@ -4,4 +4,6 @@ public/*
 logs/*
 .build/*
 build/*
-.uploads/*
+**/.uploads
+**/app.log
+**/test_img
