@@ -4,6 +4,24 @@
 <!-- `go install github.com/nikolaydubina/go-instrument@1.7.0` -->
 `go get -u github.com/ansrivas/fiberprometheus/v2`
 
+## Query
+Bisa pakai query ini
+1. Durasi Lama Waktu Request per Route
+`histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route))`
+
+2. Banyak HTTP OK dan BadRequest per Route
+`sum(rate(http_requests_total{status="200"}[5m])) by (route)`
+
+3. Gabungan status dan route
+`sum(rate(http_requests_total[5m])) by (route, status)`
+
+4. Sesuai dengan route
+misal
+```bash
+http_requests_total{method="GET", route="/api/v1/users"} 
+http_requests_total{method="POST", route="/api/v1/login"}
+```
+
 
 ## Instrumentasi
 `go-instrument -file main.go`
