@@ -24,6 +24,8 @@ services:
       - sprint_network
     env_file:
       - .env
+    volumes:
+      - ./logs:/root/logs
     
 
   tutuplapak-purchase-prometheus:
