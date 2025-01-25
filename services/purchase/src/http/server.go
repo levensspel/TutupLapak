@@ -12,6 +12,7 @@ import (
 	swaggerRoutes "github.com/TimDebug/FitByte/src/http/routes/apidocumentation"
 	purchaseRoute "github.com/TimDebug/FitByte/src/http/routes/purchase"
 	response "github.com/TimDebug/FitByte/src/model/web"
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -31,6 +32,8 @@ func (s *HttpServer) Listen() {
 				Message: err.Error(),
 			})
 		},
+		JSONEncoder: sonic.Marshal,
+		JSONDecoder: sonic.Unmarshal,
 	})
 
 	// Setup Middlewares
