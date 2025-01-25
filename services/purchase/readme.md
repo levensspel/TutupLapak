@@ -1,3 +1,9 @@
+# Cache
+Dengan graph-io/ristretto:2.3.0
+
+## Installation
+`go get github.com/dgraph-io/ristretto/v2`
+
 # Api Documentation
 
 ## Installation
