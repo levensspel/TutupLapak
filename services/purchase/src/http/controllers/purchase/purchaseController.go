@@ -81,6 +81,12 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	}
 
 	// todo; check cache untuk ProdukID
+	// todo; get produkID di produk service
+	// todo; distinct seller_id
+	// todo; check cache untuk sellerID
+	// todo; get sellerID
+	// todo; insert cart
+	// todo; compile respond
 
 	return c.Status(fiber.StatusOK).JSON(response.PurchaseResponseDTO{})
 }

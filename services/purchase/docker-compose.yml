@@ -1,0 +1,47 @@
+version: "3.8"
+services:
+  tutuplapak-purchase-service:
+    build: 
+      context: .
+      args:
+        - APP_PORT=${PORT}
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - MODE=${MODE}
+      - PROD_HOST=${PROD_HOST}
+      - DEBUG_HOST=${DEBUG_HOST}
+      - PORT=${PORT}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - NO_PROXY=${NO_PROXY}
+    networks:
+      - sprint_network
+    env_file:
+      - .env
+    
+
+  tutuplapak-purchase-prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./src/config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9095:9090"
+    networks:
+      - sprint_network
+
+  tutuplapak-purchase-grafana:
+    image: grafana/grafana
+    ports:
+      - "3015:3000"
+    networks:
+      - sprint_network
+
+networks:
+  sprint_network:
+    driver: bridge
