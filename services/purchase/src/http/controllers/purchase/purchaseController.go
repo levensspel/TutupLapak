@@ -31,7 +31,8 @@ func NewPurchaseController(logger loggerZap.LoggerInterface) IPurchaseController
 			emailRegex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 			return regexp.MustCompile(emailRegex).MatchString(value)
 		case "phone":
-			phoneRegex := `^\+?[1-9]\d{1,14}$` // E.164 format
+			// phoneRegex := `^\+?[1-9]\d{1,14}$` // E.164 format
+			phoneRegex := `^[+0]\d{1,14}$`
 			return regexp.MustCompile(phoneRegex).MatchString(value)
 		default:
 			return false
@@ -69,13 +70,17 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 
 		for _, err := range errs {
 			errMsgs = append(errMsgs, fmt.Sprintf(
-				"[%s]: '%v' | Needs to implement '%s'",
+				"[%s]: '%v' Needs to implement '%s'",
 				err.FailedField,
 				err.Value,
 				err.Tag,
 			))
 		}
-		return fiber.NewError(fiber.StatusBadRequest, strings.Join(errMsgs, " and "))
+		pc.logger.Error(strings.Join(errMsgs, " || "), functionCallerInfo.PurhcaseControllerPutCart)
+		return fiber.NewError(fiber.StatusBadRequest, strings.Join(errMsgs, " || "))
 	}
+
+	// todo; check cache untuk ProdukID
+
 	return c.Status(fiber.StatusOK).JSON(response.PurchaseResponseDTO{})
 }
