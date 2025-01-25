@@ -1,3 +1,13 @@
+# AST Instrumentation with go-instrument
+
+## Instalasi
+<!-- `go install github.com/nikolaydubina/go-instrument@1.7.0` -->
+`go get -u github.com/ansrivas/fiberprometheus/v2`
+
+
+## Instrumentasi
+`go-instrument -file main.go`
+
 # Cache
 Dengan graph-io/ristretto:2.3.0
 

@@ -12,6 +12,7 @@ import (
 	swaggerRoutes "github.com/TimDebug/FitByte/src/http/routes/apidocumentation"
 	purchaseRoute "github.com/TimDebug/FitByte/src/http/routes/purchase"
 	response "github.com/TimDebug/FitByte/src/model/web"
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
@@ -37,10 +38,17 @@ func (s *HttpServer) Listen() {
 	})
 
 	// Setup Middlewares
+	fmt.Printf("Setup middlewares\n")
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} ${status} - ${method} ${path} - Internal Latency: ${latency}\n",
 		TimeFormat: "2006-01-02 15:04:05",
 	}))
+
+	// Prometheus
+	fmt.Printf("Setup prometheus\n")
+	prometheus := fiberprometheus.New("purhcase-service")
+	prometheus.RegisterAt(app, "/metrics")
+	app.Use(prometheus.Middleware)
 
 	// app.Use(middlewares.RequestLogger)
 	app.Use(cache.New(cache.Config{
