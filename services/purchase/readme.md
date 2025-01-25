@@ -8,7 +8,9 @@ docker cp [container_id]:/root/logs/app/log ./local-log
 
 ```
 
-# Prometheus Grafana
+# Prometheus dan Grafana
+
+Untuk melihat dashboard pada Grafana, kita harus setup terlebih dulu Prometheus yang memungkinkan mengambil-scrap- data dari service
 
 ## Instalasi
 <!-- `go install github.com/nikolaydubina/go-instrument@1.7.0` -->
@@ -49,6 +51,19 @@ scrape_configs:
 http://localhost:9095/
 ```
 6. Buka tab status>target health dan pastikan service kamu OK
+
+7. Kunjungi laman ini https://grafana.com/grafana/dashboards/14331-fiber-framework-processes/ dan download template dashboard https://grafana.com/api/dashboards/14331/revisions/3/download
+
+8. Akses `http://localhost:3000/` dan buka pada laman dashboard
+
+9. Import dashboard, dan upload .json yang sudah kita download sebelumnya
+! Jika ditanya data-akses prometheus buat baru
+
+10. arahkan url prometheus pada `http://[ur_prometheus_service_container]:8080`
+
+11. lakukan test and save
+
+12. kembali pada laman dashboard, lakukan lahkah 9 
 
 ## Query
 Bisa pakai query ini
