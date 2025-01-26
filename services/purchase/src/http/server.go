@@ -17,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/samber/do/v2"
 )
@@ -48,6 +49,12 @@ func (s *HttpServer) Listen() {
 	fmt.Printf("Setup prometheus\n")
 	prometheus := fiberprometheus.New("purhcase-service")
 	prometheus.RegisterAt(app, "/metrics")
+
+	// use fiber middleware monitor
+	app.Get("/metrics", monitor.New(monitor.Config{
+		Title: "Purchase-Service Metrics Page",
+	}))
+
 	app.Use(prometheus.Middleware)
 
 	// app.Use(middlewares.RequestLogger)
