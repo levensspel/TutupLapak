@@ -40,6 +40,7 @@ func (f *FileController) Upload(ctx *fiber.Ctx) error {
 			Message: "Unable to open uploaded file",
 		}
 	}
+	defer file.Close()
 	buff := make([]byte, 512)
 	n, err := file.Read(buff)
 	if err != nil && err != io.EOF {
