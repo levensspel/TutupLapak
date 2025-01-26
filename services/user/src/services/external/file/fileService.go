@@ -1,6 +1,7 @@
 package fileService
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -14,7 +15,7 @@ import (
 
 type FileServiceInterface interface {
 	// Call to external file service
-	GetFile(ctx *fiber.Ctx, fileId string) (file service.File, statusCode int)
+	GetFile(ctx context.Context, fileId string) (file service.File, statusCode int)
 }
 
 type fileService struct {
@@ -31,7 +32,7 @@ func NewFileServiceInject(i do.Injector) (FileServiceInterface, error) {
 	return NewFileService(_logger), nil
 }
 
-func (fs *fileService) GetFile(ctx *fiber.Ctx, fileId string) (file service.File, statusCode int) {
+func (fs *fileService) GetFile(ctx context.Context, fileId string) (file service.File, statusCode int) {
 	url := fmt.Sprintf("%s/v1/file/%s", config.FILE_SERVICE_BASE_URL, fileId)
 	agent := fiber.Get(url)
 	statusCode, body, errs := agent.Bytes()
