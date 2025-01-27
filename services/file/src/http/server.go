@@ -46,6 +46,7 @@ func (s *HttpServer) Listen() {
 	}
 	repo := NewFileRepository(db)
 	service := NewFileService(repo, storageClient)
+	defer service.Shutdown()
 	controller := NewFileController(service)
 
 	routes := app.Group("/v1")

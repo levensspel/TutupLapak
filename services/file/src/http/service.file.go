@@ -6,13 +6,20 @@ import (
 	"image"
 	"io"
 	"mime/multipart"
+	"runtime"
 	"strings"
 
+	conf "github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/disintegration/imaging"
+	wpool "github.com/gammazero/workerpool"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+)
+
+var (
+	c conf.Configuration = conf.Config
 )
 
 type FileEntity struct {
@@ -24,12 +31,14 @@ type FileEntity struct {
 type FileService struct {
 	Repo          FileRepository
 	StorageClient StorageClient
+	wp            *wpool.WorkerPool
 }
 
 func NewFileService(repo FileRepository, storageClient StorageClient) FileService {
 	return FileService{
 		Repo:          repo,
 		StorageClient: storageClient,
+		wp:            wpool.New(runtime.NumCPU()),
 	}
 }
 
@@ -44,23 +53,52 @@ func (fs *FileService) UploadFile(
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
-	mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
-	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+	if c.IsOptimized {
+		done := make(chan error, 1)
+		entityChan := make(chan *FileEntity, 1)
+		fs.wp.Submit(func() {
+			mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
+			if err != nil {
+				done <- &fiber.Error{Code: 500, Message: "unable to read file content"}
+			}
+			// compress file into thumbnail
+			fileBuf, err := fs.compressImage(fileContent)
+			if err != nil {
+				done <- &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
+			}
+			// upload the thumbnail to S3
+			thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
+			thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
+			if err != nil {
+				done <- &fiber.Error{Code: 500, Message: "unable to read file content"}
+			}
+			// store the record
+			entity, err := fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
+			done <- err
+			entityChan <- entity
+			close(done)
+			close(entityChan)
+		})
+		return <-entityChan, <-done
+	} else {
+		mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
+		if err != nil {
+			return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+		}
+		// compress file into thumbnail
+		fileBuf, err := fs.compressImage(fileContent)
+		if err != nil {
+			return nil, &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
+		}
+		// upload the thumbnail to S3
+		thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
+		thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
+		if err != nil {
+			return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+		}
+		// store the record
+		return fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
 	}
-	// compress file into thumbnail
-	fileBuf, err := fs.compressImage(fileContent)
-	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
-	}
-	// upload the thumbnail to S3
-	thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
-	thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
-	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
-	}
-	// store the record
-	return fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
 }
 
 func (fs *FileService) compressImage(content []byte) ([]byte, error) {
@@ -112,4 +150,8 @@ func (fs *FileService) CheckExist(ctx *fiber.Ctx, fileId string) (*FileEntity, e
 		return nil, &fiber.Error{Code: 500, Message: "server error"}
 	}
 	return entity, nil
+}
+
+func (fs *FileService) Shutdown() {
+	fs.wp.StopWait()
 }
