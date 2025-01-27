@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
@@ -18,6 +20,7 @@ func main() {
 		log.Logger.Fatal().Err(err).Msg("unable to init basic logger")
 	}
 	log.Logger.Info().Msg("configured basic logger")
+	log.Logger.Info().Msg(fmt.Sprintf("NumCPU: %d", runtime.NumCPU()))
 
 	// Initialize app configurations
 	err = config.New()
