@@ -4,15 +4,15 @@ import "time"
 
 // PurchaseResponseDTO represents the response structure for a purchase.
 type PurchaseResponseDTO struct {
-	PurchaseID     string             `json:"purchaseId"`
-	PurchasedItems []PurchasedItemDTO `json:"purchasedItems"`
-	TotalPrice     float64            `json:"totalPrice"`
-	PaymentDetails []PaymentDetailDTO `json:"paymentDetails"`
+	PurchaseId     string                `json:"purchaseId"`
+	PurchasedItems []ProductItemDTO      `json:"purchasedItems"`
+	TotalPrice     float64               `json:"totalPrice"`
+	PaymentDetails []SellerBankDetailDTO `json:"paymentDetails"`
 }
 
 // PurchasedItemDTO represents the details of each purchased item.
-type PurchasedItemDTO struct {
-	ProductID        string    `json:"productId"`
+type ProductItemDTO struct {
+	ProductId        string    `json:"productId"`
 	Name             string    `json:"name"`
 	Category         string    `json:"category"`
 	Qty              int       `json:"qty"`
@@ -23,10 +23,12 @@ type PurchasedItemDTO struct {
 	FileThumbnailURI string    `json:"fileThumbnailUri"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
+	SellerId         string
 }
 
 // PaymentDetailDTO represents the details of payment for each seller.
-type PaymentDetailDTO struct {
+type SellerBankDetailDTO struct {
+	SellerId          string
 	BankAccountName   string  `json:"bankAccountName"`
 	BankAccountHolder string  `json:"bankAccountHolder"`
 	BankAccountNumber string  `json:"bankAccountNumber"`

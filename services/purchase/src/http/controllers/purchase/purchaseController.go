@@ -3,8 +3,12 @@ package appController
 import (
 	"fmt"
 	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
+	"time"
 
+	serviceCache "github.com/TimDebug/FitByte/src/cache"
 	helper "github.com/TimDebug/FitByte/src/helper/validator"
 	functionCallerInfo "github.com/TimDebug/FitByte/src/logger/helper"
 	loggerZap "github.com/TimDebug/FitByte/src/logger/zap"
@@ -58,6 +62,7 @@ func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/purchase [post]
 func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
+	//// todo; Parse Body
 	requestBody := new(request.CartDto)
 	if err := c.BodyParser(requestBody); err != nil {
 		pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart)
@@ -80,13 +85,176 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, strings.Join(errMsgs, " || "))
 	}
 
-	// todo; check cache untuk ProdukID
-	// todo; get produkID di produk service
-	// todo; distinct seller_id
-	// todo; check cache untuk sellerID
-	// todo; get sellerID
-	// todo; insert cart
+	//// todo; buat cart
+	// detail dari cart nanti ditambahkan setelah produk dan seller semua terkompilasi
+	var cart response.PurchaseResponseDTO
+
+	// sambil jalan mengambil produk dan seller, juga akumulasi totalPrice
+	cart.TotalPrice = 0
+
+	//// todo; check cache untuk ProdukID
+
+	var cachedProducts []response.ProductItemDTO
+	var cachedSeller []response.SellerBankDetailDTO
+
+	// teknik indexing ketimbang for loop dan "find" dari go-lodash, gimik cuy
+	//
+	// parameter
+	// 	- string: sellerId
+	// 	- int: index
+	var mapSellerId map[string]int
+	// berperan sebagai pointer index untuk mapSellerId
+	var pointerIndexSellerId int = 0
+	// berisi total harga yang akan dibawar oleh pembeli, index berdasarkan sellerId
+	var sellerIdTotalPrices []float64
+
+	//// todo; buat satu kontainer apabila produk dan seller tidak ada di cache
+	var toGetProductsById []string
+	var toGetSellersById []string
+
+	// todo; task (go-routine)
+	// forloop ambil cache by productIDs
+	for _, item := range requestBody.PurchasedItems {
+		if cachedProductValue, found := serviceCache.GetAsMap(fmt.Sprintf(serviceCache.CacheProductById, item.ProductId)); found {
+			/*
+				type ProductItemDTO struct {
+					ProductId        string    `json:"productId"`
+					Name             string    `json:"name"`
+					Category         string    `json:"category"`
+					Qty              int       `json:"qty"`
+					Price            float64   `json:"price"`
+					SKU              string    `json:"sku"`
+					FileID           string    `json:"fileId"`
+					FileURI          string    `json:"fileUri"`
+					FileThumbnailURI string    `json:"fileThumbnailUri"`
+					CreatedAt        time.Time `json:"createdAt"`
+					UpdatedAt        time.Time `json:"updatedAt"`
+				}
+			*/
+			_qty, err := strconv.Atoi(cachedProductValue["Qty"]) // Atoi = ASCII to Integer
+			if err != nil {
+				// Tangani error jika string tidak bisa dikonversi ke angka
+				fmt.Println("Error:", err)
+				panic(err.Error())
+			}
+			_price, err := strconv.ParseFloat(cachedProductValue["Qty"], 64) // Atoi = ASCII to Integer
+			if err != nil {
+				// Tangani error jika string tidak bisa dikonversi ke floating number
+				fmt.Println("Error:", err)
+				panic(err.Error())
+			}
+			_createdAt, err := time.Parse(time.RFC3339, cachedProductValue["CreatedAt"])
+			if err != nil {
+				// Tangani error jika string tidak bisa dikonversi ke Time sesuai dengan ISO
+				fmt.Println("Error:", err)
+				panic(err.Error())
+			}
+			_modifiedAt, err := time.Parse(time.RFC3339, cachedProductValue["UpdatedAt"])
+			if err != nil {
+				// Tangani error jika string tidak bisa dikonversi ke Time sesuai dengan ISO
+				fmt.Println("Error:", err)
+				panic(err.Error())
+			}
+
+			_sellerId := cachedProductValue["SellerId"]
+
+			cachedProducts = append(cachedProducts, response.ProductItemDTO{
+				ProductId:        item.ProductId,
+				Name:             cachedProductValue["Name"],
+				Category:         cachedProductValue["Category"],
+				Qty:              _qty,
+				Price:            _price,
+				SKU:              cachedProductValue["SKU"],
+				FileID:           cachedProductValue["FileID"],
+				FileURI:          cachedProductValue["FileURI"],
+				FileThumbnailURI: cachedProductValue["FileThumbnailURI"],
+				CreatedAt:        _createdAt,
+				UpdatedAt:        _modifiedAt,
+				SellerId:         _sellerId,
+			})
+
+			// todo; distinct seller_id
+			// yang jelas, pertama kali ini pasti enggak ada catatannya
+			indexSellerId, exists := mapSellerId[_sellerId]
+			if !exists {
+				// key tidak ada dalam map, inisiasi total harga awal
+
+				// tambahkan terlebih dulu informasi seller
+				mapSellerId[_sellerId] = pointerIndexSellerId
+
+				// append baru ke larik total harga, index dari urutan seller
+				sellerIdTotalPrices = append(sellerIdTotalPrices, _price)
+
+				// todo; check cache untuk sellerID
+				/*
+					type SellerBankDetailDTO struct {
+						SellerId          string
+						BankAccountName   string  `json:"bankAccountName"`
+						BankAccountHolder string  `json:"bankAccountHolder"`
+						BankAccountNumber string  `json:"bankAccountNumber"`
+						TotalPrice        float64 `json:"totalPrice"`
+					}
+				*/
+				if cachedSellerValue, found := serviceCache.GetAsMap(fmt.Sprintf(serviceCache.CacheSellerById, _sellerId)); found {
+					cachedSeller = append(cachedSeller, response.SellerBankDetailDTO{
+						SellerId:          cachedSellerValue["SellerId"],
+						BankAccountName:   cachedSellerValue["BankAccountName"],
+						BankAccountHolder: cachedSellerValue["BankAccountHolder"],
+						BankAccountNumber: cachedSellerValue["BankAccountNumber"],
+						TotalPrice:        sellerIdTotalPrices[pointerIndexSellerId],
+					})
+				} else {
+					// todo; kompilasi sellerId yang akan diambil
+					toGetSellersById = append(toGetSellersById, _sellerId)
+				}
+
+				// increment pointerIndexSellerId
+				pointerIndexSellerId = pointerIndexSellerId + 1
+			} else {
+				// key ada,
+
+				// update akumulasi total harga
+				sellerIdTotalPrices[indexSellerId] = sellerIdTotalPrices[indexSellerId] + _price
+
+				// update total harga dari cache seller detail, karena cachedSeller berupa larik kita ambil elemen dengan index yang sudah diambil dari mapSellerId
+				cachedSeller[indexSellerId].TotalPrice = sellerIdTotalPrices[indexSellerId]
+			}
+
+			// todo; insert cart
+			cart.TotalPrice = cart.TotalPrice + _price
+
+		} else {
+			// todo; kompilasi produkId yang akan diambil
+			toGetProductsById = append(toGetProductsById, item.ProductId)
+
+		}
+	}
+
+	// todo; get produkId di produk service
+	if len(toGetProductsById) > 0 {
+		// kirim batch
+
+		// dapat response
+
+		// masukan ke respons.dto
+	}
+	// todo; get SellerId berdasarkan produkId
+	if len(toGetSellersById) > 0 {
+		// kirim batch
+
+		// dapat response
+
+		// masukan ke respons.dto
+	}
 	// todo; compile respond
 
-	return c.Status(fiber.StatusOK).JSON(response.PurchaseResponseDTO{})
+	// todo; free temporaries
+	mapSellerId = nil
+	pointerIndexSellerId = 0
+	sellerIdTotalPrices = nil
+	cachedProducts = nil
+	toGetSellersById = nil
+	runtime.GC()
+	//
+	return c.Status(fiber.StatusOK).JSON(cart)
 }
