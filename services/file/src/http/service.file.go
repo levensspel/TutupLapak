@@ -38,7 +38,7 @@ func NewFileService(repo FileRepository, storageClient StorageClient) FileServic
 	return FileService{
 		Repo:          repo,
 		StorageClient: storageClient,
-		wp:            wpool.New(runtime.NumCPU()),
+		wp:            wpool.New(runtime.NumCPU() * 3),
 	}
 }
 
@@ -54,32 +54,57 @@ func (fs *FileService) UploadFile(
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
 	if c.IsOptimized {
-		done := make(chan error, 1)
-		entityChan := make(chan *FileEntity, 1)
+		mainFileUriChan := make(chan string, 1)
+		thumbnailUriChan := make(chan string, 1)
+		errorChan := make(chan error, 2)
+
 		fs.wp.Submit(func() {
+			// Step 1: Upload main file to S3
 			mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
 			if err != nil {
-				done <- &fiber.Error{Code: 500, Message: "unable to read file content"}
+				errorChan <- fmt.Errorf("main file upload failed: %w", err)
+				return
 			}
-			// compress file into thumbnail
+			mainFileUriChan <- mainUri
+		})
+
+		fs.wp.Submit(func() {
+			// Step 2: Compress the main file
 			fileBuf, err := fs.compressImage(fileContent)
 			if err != nil {
-				done <- &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
+				errorChan <- fmt.Errorf("thumbnail compression failed: %w", err)
+				return
 			}
-			// upload the thumbnail to S3
-			thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
+
+			// Step 3: Upload thumbnail to S3
+			thumbFileName := fmt.Sprintf("thumbnail-%s", targetFilename)
 			thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
 			if err != nil {
-				done <- &fiber.Error{Code: 500, Message: "unable to read file content"}
+				errorChan <- fmt.Errorf("thumbnail upload failed: %w", err)
+				return
 			}
-			// store the record
-			entity, err := fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
-			done <- err
-			entityChan <- entity
-			close(done)
-			close(entityChan)
+			thumbnailUriChan <- thumbnailUri
 		})
-		return <-entityChan, <-done
+
+		var mainUri, thumbnailUri string
+
+		for i := 0; i < 2; i++ {
+			select {
+			case err := <-errorChan:
+				return nil, err
+			case uri := <-mainFileUriChan:
+				mainUri = uri
+			case uri := <-thumbnailUriChan:
+				thumbnailUri = uri
+			}
+		}
+
+		entity, err := fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
+		if err != nil {
+			return nil, fmt.Errorf("database insert failed: %w", err)
+		}
+
+		return entity, nil
 	} else {
 		mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
 		if err != nil {
