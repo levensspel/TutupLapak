@@ -1,13 +1,41 @@
+
+# gRPC Client
+## Instalasi
+1. Jalankan perintah dibawah dalam terminal
+```bash
+# 1. Install protobuf compiler, 
+# Ubuntu / iOS
+sudo apt install protobuf-compiler
+# Windows, buka powershell Administrator dulu
+choco install protoc
+
+# 2. Pasang auto-generated go proto
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# 3. Pasang depedensi untuk service golang sendiri
+go get -u github.com/golang/protobuf/protoc-gen-go 
+#atau 
+go get -u google.golang.org/protobuf
+
+```
+## Setup
+1. Ambil dulu `.proto` dan letakan dalam satu direktori `./proto/`
+2. Jalankan command berikut
+```bash
+protoc --go_out=. --go-grpc_out=. ./proto/*.proto
+```
+3. Setelah di generate. Pakai _Service yang ada di ..._grpc.pb.go
+4. Karena kita akan bangun client, buka `./src/http/server.go`
+5. 
+
 # Mengambil log dari docker-container
 ```bash
 # Cek ContainerID atau ContainerName
 docker ps
-
 # Ambil ID dan ganti container_id dengan ID container yang ada
 docker cp [container_id]:/root/logs/app/log ./local-log
-
 ```
-
 # Prometheus dan Grafana
 
 Untuk melihat dashboard pada Grafana, kita harus setup terlebih dulu Prometheus yang memungkinkan mengambil-scrap- data dari service

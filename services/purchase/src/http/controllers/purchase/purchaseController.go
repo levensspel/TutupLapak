@@ -1,6 +1,7 @@
 package appController
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"runtime"
@@ -14,14 +15,17 @@ import (
 	loggerZap "github.com/TimDebug/FitByte/src/logger/zap"
 	"github.com/TimDebug/FitByte/src/model/dtos/request"
 	"github.com/TimDebug/FitByte/src/model/dtos/response"
+	"github.com/TimDebug/FitByte/src/services/proto/user"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/samber/do/v2"
+	"google.golang.org/grpc"
 )
 
 type PurchaseController struct {
-	logger    loggerZap.LoggerInterface
-	validator helper.XValidator
+	logger             loggerZap.LoggerInterface
+	validator          helper.XValidator
+	userServiceAddress string
 }
 
 func NewPurchaseController(logger loggerZap.LoggerInterface) IPurchaseController {
@@ -42,7 +46,8 @@ func NewPurchaseController(logger loggerZap.LoggerInterface) IPurchaseController
 			return false
 		}
 	})
-	return &PurchaseController{logger: logger, validator: xValidator}
+
+	return &PurchaseController{logger: logger, validator: xValidator, userServiceAddress: "localhost:50051"}
 }
 
 func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
@@ -103,6 +108,7 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	// 	- string: sellerId
 	// 	- int: index
 	var mapSellerId map[string]int
+	mapSellerId = make(map[string]int)
 	// berperan sebagai pointer index untuk mapSellerId
 	var pointerIndexSellerId int = 0
 	// berisi total harga yang akan dibawar oleh pembeli, index berdasarkan sellerId
@@ -235,16 +241,100 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 		// kirim batch
 
 		// dapat response
-
 		// masukan ke respons.dto
+		// untuk sementara pakai toGetProductsById terlebih dulu sampai produk service siap
+		for _, item := range toGetProductsById {
+			_sellerId := "d29bdf02-25dc-4742-b425-728374370351"
+			_price := 0.0
+			cart.PurchasedItems = append(cart.PurchasedItems, response.ProductItemDTO{
+				ProductId: item,
+				Price:     _price,
+				SellerId:  _sellerId,
+			})
+
+			// todo; distinct seller_id
+			// yang jelas, pertama kali ini pasti enggak ada catatannya
+			indexSellerId, exists := mapSellerId[_sellerId]
+			if !exists {
+				// key tidak ada dalam map, inisiasi total harga awal
+
+				// tambahkan terlebih dulu informasi seller
+				mapSellerId[_sellerId] = pointerIndexSellerId
+
+				// append baru ke larik total harga, index dari urutan seller
+				sellerIdTotalPrices = append(sellerIdTotalPrices, _price)
+
+				// todo; check cache untuk sellerID
+				/*
+					type SellerBankDetailDTO struct {
+						SellerId          string
+						BankAccountName   string  `json:"bankAccountName"`
+						BankAccountHolder string  `json:"bankAccountHolder"`
+						BankAccountNumber string  `json:"bankAccountNumber"`
+						TotalPrice        float64 `json:"totalPrice"`
+					}
+				*/
+				if cachedSellerValue, found := serviceCache.GetAsMap(fmt.Sprintf(serviceCache.CacheSellerById, _sellerId)); found {
+					cachedSeller = append(cachedSeller, response.SellerBankDetailDTO{
+						SellerId:          cachedSellerValue["SellerId"],
+						BankAccountName:   cachedSellerValue["BankAccountName"],
+						BankAccountHolder: cachedSellerValue["BankAccountHolder"],
+						BankAccountNumber: cachedSellerValue["BankAccountNumber"],
+						TotalPrice:        sellerIdTotalPrices[pointerIndexSellerId],
+					})
+				} else {
+					// todo; kompilasi sellerId yang akan diambil
+					toGetSellersById = append(toGetSellersById, _sellerId)
+				}
+
+				// increment pointerIndexSellerId
+				pointerIndexSellerId = pointerIndexSellerId + 1
+			} else {
+				// key ada,
+
+				// update akumulasi total harga
+				sellerIdTotalPrices[indexSellerId] = sellerIdTotalPrices[indexSellerId] + _price
+
+				// update total harga dari cache seller detail, karena cachedSeller berupa larik kita ambil elemen dengan index yang sudah diambil dari mapSellerId
+				cachedSeller[indexSellerId].TotalPrice = sellerIdTotalPrices[indexSellerId]
+			}
+
+			// todo; insert cart
+			cart.TotalPrice = cart.TotalPrice + _price
+		}
 	}
 	// todo; get SellerId berdasarkan produkId
 	if len(toGetSellersById) > 0 {
 		// kirim batch
+		connection, err := grpc.Dial(pc.userServiceAddress, grpc.WithInsecure())
+		if err != nil {
+			panic(fmt.Errorf("failed to connect to gRPC server: %w", err))
+		}
+		defer connection.Close()
 
+		// Create new userService client
+		userServiceClient := user.NewUserServiceClient(connection)
+
+		// Create context with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// Call gRPC method
 		// dapat response
-
+		grpcResponse, err := userServiceClient.GetUserDetailsWithId(ctx, &user.UserRequest{UserIds: toGetSellersById})
+		if err != nil {
+			panic(fmt.Errorf("error during gRPC call: %w", err))
+		}
 		// masukan ke respons.dto
+		for _, item := range grpcResponse.Users {
+			cart.PaymentDetails = append(cart.PaymentDetails, response.SellerBankDetailDTO{
+				SellerId:          item.UserId,
+				BankAccountName:   item.BankAccountName,
+				BankAccountHolder: item.BankAccountHolder,
+				BankAccountNumber: item.BankAccountNumber,
+			})
+		}
+		connection.Close()
 	}
 	// todo; compile respond
 
