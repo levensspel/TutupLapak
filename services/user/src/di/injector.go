@@ -42,8 +42,6 @@ func init() {
 	do.Provide[userController.UserControllerInterface](Injector, userController.NewUserControllerInject)
 
 	//? Proto User Controller
-	// do.Provide[protoUserController.ProtoUserController](Injector, protoUserController.NewUserControllerInject)
-	// do.Provide[protoUserController.ProtoUserController](Injector, protoUserController.NewUserControllerInject)
 	do.Provide[*protoUserController.ProtoUserController](Injector, protoUserController.NewUserControllerInject)
 
 	//? Setup Services
