@@ -34,7 +34,6 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1.5.1
 # 3. Pasang depedensi untuk service golang sendiri
 go get -u github.com/golang/protobuf/protoc-gen-go
 go get -u google.golang.org/protobuf
-
 ```
 ## Setup
 1. Buat dulu kontrak proto nya, bisa copas .proto di ./services/user/proto
