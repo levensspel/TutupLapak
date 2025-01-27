@@ -31,6 +31,11 @@ type UserServiceInterface interface {
 	LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest, userId string) (response.UserResponse, error)
 	GetUserProfile(ctx *fiber.Ctx, userId string) (response.UserResponse, error)
 	UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error)
+
+	//for grpc
+
+	GetUserProfiles(ctx context.Context, userId []string) ([]response.UserResponse, error)
+	GetUserProfilesWithId(ctx context.Context, userId []string) ([]response.UserWithIdResponse, error)
 }
 
 type userService struct {
@@ -324,4 +329,40 @@ func (us *userService) UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUse
 	response := helper.ConvertUserToResponse(user)
 
 	return response, nil
+}
+
+func (us *userService) GetUserProfiles(ctx context.Context, userId []string) ([]response.UserResponse, error) {
+	users, err := us.UserRepository.GetUserProfiles(ctx, us.Db, userId)
+
+	if err != nil {
+		statusCode, message := helper.MapPgxError(err)
+		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryGetUserProfile, statusCode, message, err)
+		// kalau ada masalah apa-pun, kembalikan badrequest
+		return nil, exceptions.NewBadRequestError(fiber.ErrBadRequest.Message, fiber.StatusBadRequest)
+	}
+
+	if users == nil {
+		us.Logger.Error(fiber.ErrBadRequest.Message, functionCallerInfo.UserServiceGetUserProfile)
+		return nil, exceptions.NewBadRequestError(fiber.ErrBadRequest.Message, fiber.StatusBadRequest)
+	}
+
+	return users, nil
+}
+
+func (us *userService) GetUserProfilesWithId(ctx context.Context, userId []string) ([]response.UserWithIdResponse, error) {
+	users, err := us.UserRepository.GetUserProfilesWithId(ctx, us.Db, userId)
+
+	if err != nil {
+		statusCode, message := helper.MapPgxError(err)
+		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryGetUserProfile, statusCode, message, err)
+		// kalau ada masalah apa-pun, kembalikan badrequest
+		return nil, exceptions.NewBadRequestError(fiber.ErrBadRequest.Message, fiber.StatusBadRequest)
+	}
+
+	if users == nil {
+		us.Logger.Error(fiber.ErrBadRequest.Message, functionCallerInfo.UserServiceGetUserProfile)
+		return nil, exceptions.NewBadRequestError(fiber.ErrBadRequest.Message, fiber.StatusBadRequest)
+	}
+
+	return users, nil
 }

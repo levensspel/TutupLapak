@@ -26,12 +26,26 @@ message UserResponse {
   string bankAccountNumber = 5;  // Nomor akun bank
 }
 
+message UserWithIdResponse {
+  string userId = 1;              // Id User
+  string email = 2;              // Email pengguna
+  string phone = 3;              // Nomor telepon pengguna
+  string bankAccountName = 4;    // Nama bank pengguna
+  string bankAccountHolder = 5;  // Nama pemilik akun bank
+  string bankAccountNumber = 6;  // Nomor akun bank
+}
+
 // Response untuk banyak pengguna
 message UsersResponse {
   repeated UserResponse users = 1; // Larik UserResponse untuk beberapa pengguna
 }
 
+message UsersWithIdResponse {
+  repeated UserWithIdResponse users = 1; // Larik UserWithIdResponse untuk beberapa pengguna
+}
+
 // Define RPC service
 service UserService {
   rpc GetUserDetails(UserRequest) returns (UsersResponse); // Mendapatkan detail banyak pengguna
+  rpc GetUserDetailsWithId(UserRequest) returns (UsersWithIdResponse); // Mendapatkan detail banyak pengguna
 }

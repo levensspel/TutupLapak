@@ -8,4 +8,5 @@ import (
 
 type ProtoUserControllerInterface interface {
 	GetUserDetails(ctx context.Context, request *user.UserRequest) (*user.UsersResponse, error)
+	GetUserDetailsWithId(ctx context.Context, request *user.UserRequest) (*user.UserWithIdResponse, error)
 }

@@ -21,7 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_GetUserDetails_FullMethodName = "/user.UserService/GetUserDetails"
+	UserService_GetUserDetails_FullMethodName       = "/user.UserService/GetUserDetails"
+	UserService_GetUserDetailsWithId_FullMethodName = "/user.UserService/GetUserDetailsWithId"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -31,6 +32,7 @@ const (
 // Define RPC service
 type UserServiceClient interface {
 	GetUserDetails(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*UsersResponse, error)
+	GetUserDetailsWithId(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*UsersWithIdResponse, error)
 }
 
 type userServiceClient struct {
@@ -51,6 +53,16 @@ func (c *userServiceClient) GetUserDetails(ctx context.Context, in *UserRequest,
 	return out, nil
 }
 
+func (c *userServiceClient) GetUserDetailsWithId(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*UsersWithIdResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UsersWithIdResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUserDetailsWithId_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -58,6 +70,7 @@ func (c *userServiceClient) GetUserDetails(ctx context.Context, in *UserRequest,
 // Define RPC service
 type UserServiceServer interface {
 	GetUserDetails(context.Context, *UserRequest) (*UsersResponse, error)
+	GetUserDetailsWithId(context.Context, *UserRequest) (*UsersWithIdResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -70,6 +83,9 @@ type UnimplementedUserServiceServer struct{}
 
 func (UnimplementedUserServiceServer) GetUserDetails(context.Context, *UserRequest) (*UsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserDetails not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserDetailsWithId(context.Context, *UserRequest) (*UsersWithIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserDetailsWithId not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -110,6 +126,24 @@ func _UserService_GetUserDetails_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetUserDetailsWithId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserDetailsWithId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserDetailsWithId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserDetailsWithId(ctx, req.(*UserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -120,6 +154,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserDetails",
 			Handler:    _UserService_GetUserDetails_Handler,
+		},
+		{
+			MethodName: "GetUserDetailsWithId",
+			Handler:    _UserService_GetUserDetailsWithId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
