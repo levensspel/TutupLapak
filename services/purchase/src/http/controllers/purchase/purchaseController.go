@@ -351,7 +351,9 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	sellerIdTotalPrices = nil
 	cachedProducts = nil
 	toGetSellersById = nil
-	runtime.GC()
+	go func() {
+		runtime.GC()
+	}()
 
 	// Catat waktu selesai
 	cleanElapsed := time.Since(cleanStart)
