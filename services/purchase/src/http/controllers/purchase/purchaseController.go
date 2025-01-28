@@ -10,6 +10,7 @@ import (
 	"time"
 
 	serviceCache "github.com/TimDebug/FitByte/src/cache"
+	purchaseGrpc "github.com/TimDebug/FitByte/src/grpc"
 	helper "github.com/TimDebug/FitByte/src/helper/validator"
 	functionCallerInfo "github.com/TimDebug/FitByte/src/logger/helper"
 	loggerZap "github.com/TimDebug/FitByte/src/logger/zap"
@@ -19,16 +20,15 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/samber/do/v2"
-	"google.golang.org/grpc"
 )
 
 type PurchaseController struct {
-	logger             loggerZap.LoggerInterface
-	validator          helper.XValidator
-	userServiceAddress string
+	logger     loggerZap.LoggerInterface
+	validator  helper.XValidator
+	grpcClient *purchaseGrpc.ProtoUserController
 }
 
-func NewPurchaseController(logger loggerZap.LoggerInterface) IPurchaseController {
+func NewPurchaseController(logger loggerZap.LoggerInterface, grpcClient *purchaseGrpc.ProtoUserController) IPurchaseController {
 	xValidator := helper.XValidator{Validator: validator.New()}
 	xValidator.Validator.RegisterValidation("sender_email_or_phone", func(fl validator.FieldLevel) bool {
 		contactType := fl.Parent().FieldByName("SenderContactType").String()
@@ -47,12 +47,13 @@ func NewPurchaseController(logger loggerZap.LoggerInterface) IPurchaseController
 		}
 	})
 
-	return &PurchaseController{logger: logger, validator: xValidator, userServiceAddress: "localhost:50051"}
+	return &PurchaseController{logger: logger, validator: xValidator, grpcClient: grpcClient}
 }
 
 func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
 	_logger := do.MustInvoke[loggerZap.LoggerInterface](i)
-	return NewPurchaseController(_logger), nil
+	_grpcClient := do.MustInvoke[*purchaseGrpc.ProtoUserController](i)
+	return NewPurchaseController(_logger, _grpcClient), nil
 }
 
 // Purchase godoc
@@ -67,6 +68,7 @@ func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/purchase [post]
 func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
+	fmt.Printf("INI\nITU\n")
 	//// todo; Parse Body
 	requestBody := new(request.CartDto)
 	if err := c.BodyParser(requestBody); err != nil {
@@ -141,25 +143,29 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke angka
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse Qty")
+				return err
 			}
-			_price, err := strconv.ParseFloat(cachedProductValue["Qty"], 64) // Atoi = ASCII to Integer
+			_price, err := strconv.ParseFloat(cachedProductValue["Price"], 64) // Atoi = ASCII to Integer
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke floating number
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse Price")
+				return err
 			}
 			_createdAt, err := time.Parse(time.RFC3339, cachedProductValue["CreatedAt"])
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke Time sesuai dengan ISO
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse CreatedAt")
+				return err
 			}
 			_modifiedAt, err := time.Parse(time.RFC3339, cachedProductValue["UpdatedAt"])
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke Time sesuai dengan ISO
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse ModifiedAt")
+				return err
 			}
 
 			_sellerId := cachedProductValue["SellerId"]
@@ -305,15 +311,11 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	}
 	// todo; get SellerId berdasarkan produkId
 	if len(toGetSellersById) > 0 {
-		// kirim batch
-		connection, err := grpc.Dial(pc.userServiceAddress, grpc.WithInsecure())
-		if err != nil {
-			panic(fmt.Errorf("failed to connect to gRPC server: %w", err))
-		}
-		defer connection.Close()
+		fmt.Printf("MULAI GET_SELLER\n")
+		// Mulai pengukuran waktu
+		start := time.Now()
 
-		// Create new userService client
-		userServiceClient := user.NewUserServiceClient(connection)
+		// kirim batch
 
 		// Create context with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -321,9 +323,10 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 
 		// Call gRPC method
 		// dapat response
-		grpcResponse, err := userServiceClient.GetUserDetailsWithId(ctx, &user.UserRequest{UserIds: toGetSellersById})
+		grpcResponse, err := pc.grpcClient.UserService.GetUserDetailsWithId(ctx, &user.UserRequest{UserIds: toGetSellersById})
 		if err != nil {
-			panic(fmt.Errorf("error during gRPC call: %w", err))
+			pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, "Grpc Call")
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("error during gRPC call: %s\n", err.Error()))
 		}
 		// masukan ke respons.dto
 		for _, item := range grpcResponse.Users {
@@ -334,8 +337,12 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 				BankAccountNumber: item.BankAccountNumber,
 			})
 		}
-		connection.Close()
+
+		// Catat waktu selesai
+		elapsed := time.Since(start)
+		fmt.Printf("GRPC CALL >> Batch processing took %s\n", elapsed)
 	}
+	cleanStart := time.Now()
 	// todo; compile respond
 
 	// todo; free temporaries
@@ -344,7 +351,13 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	sellerIdTotalPrices = nil
 	cachedProducts = nil
 	toGetSellersById = nil
-	runtime.GC()
+	go func() {
+		runtime.GC()
+	}()
+
+	// Catat waktu selesai
+	cleanElapsed := time.Since(cleanStart)
+	fmt.Printf("CLEAN FREE>> Batch processing took %s\n", cleanElapsed)
 	//
-	return c.Status(fiber.StatusOK).JSON(cart)
+	return c.Status(fiber.StatusCreated).JSON(cart)
 }

@@ -34,8 +34,12 @@ func GetPort() string {
 	return getEnv("PORT", "8080")
 }
 
-func GetGrpcPort() string {
+func GetGRPCPort() string {
 	return getEnv("GRPC_PORT", "50051")
+}
+
+func GetMetricGRPCPort() string {
+	return getEnv("METRIC_GRPC_PORT", "9090")
 }
 
 func getFileServiceBaseURL() string {

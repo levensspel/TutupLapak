@@ -44,7 +44,7 @@ func (puc ProtoUserController) GetUserDetails(ctx context.Context, request *user
 
 	response, err := puc.userService.GetUserProfiles(ctx, request.UserIds)
 	if err != nil {
-		fmt.Sprintf("Error %s", err.Error())
+		fmt.Sprintf("GetUserDetails Error %s", err.Error())
 		puc.logger.Error(err.Error(), functionCallerInfo.UserControllerGetUserProfile)
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (puc ProtoUserController) GetUserDetailsWithId(ctx context.Context, request
 
 	response, err := puc.userService.GetUserProfilesWithId(ctx, request.UserIds)
 	if err != nil {
-		fmt.Sprintf("Error %s", err.Error())
+		fmt.Sprintf("GetUserDetailsWithId Error %s", err.Error())
 		puc.logger.Error(err.Error(), functionCallerInfo.UserControllerGetUserProfile)
 		return nil, err
 	}

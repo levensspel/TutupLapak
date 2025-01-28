@@ -97,7 +97,15 @@ localhost:50051
 }
 ```
 
+## Prometheus for Grpc
+1. Install
+```bash
+go get github.com/prometheus/client_golang/prometheus
+go get github.com/prometheus/client_golang/prometheus/promhttp
+go get github.com/grpc-ecosystem/go-grpc-prometheus
 ```
+2. 
+
 ### NOTE: 
 it is important to put the build inside of the .build folder
 to ensure the gitignore caught up with the files.
