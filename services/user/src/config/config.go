@@ -18,4 +18,8 @@ func GetFileServiceBaseURL() string {
 	return getEnv("FILE_SERVICE_BASE_URL", "")
 }
 
+func GetGRPCPort() string {
+	return getEnv("GRPC_PORT", "50051")
+}
+
 var FILE_SERVICE_BASE_URL string
