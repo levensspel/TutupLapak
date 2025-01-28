@@ -20,30 +20,13 @@ services:
       - HTTP_PROXY=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - NO_PROXY=${NO_PROXY}
-    networks:
-      - sprint_network
     env_file:
       - .env
     volumes:
       - ./logs:/root/logs
-    
-
-  tutuplapak-purchase-prometheus:
-    image: prom/prometheus
-    volumes:
-      - ./src/config/prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9095:9090"
     networks:
-      - sprint_network
-
-  tutuplapak-purchase-grafana:
-    image: grafana/grafana
-    ports:
-      - "3015:3000"
-    networks:
-      - sprint_network
+      - tutuplapak-network
 
 networks:
-  sprint_network:
-    driver: bridge
+  tutuplapak-network:
+    external: false    

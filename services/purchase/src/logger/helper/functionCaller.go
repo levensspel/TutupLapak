@@ -25,5 +25,6 @@ const (
 	ActivityServiceDelete    FunctionCaller = "activityService.Delete"
 	ActivityControllerDelete FunctionCaller = "activityController.Delete"
 
-	PurhcaseControllerPutCart FunctionCaller = "purchaseController.PutCart"
+	PurhcaseControllerPutCart      FunctionCaller = "purchaseController.PutCart"
+	CachePurhcaseControllerPutCart FunctionCaller = "purchaseController.PutCartCache"
 )
