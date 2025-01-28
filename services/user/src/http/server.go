@@ -2,8 +2,6 @@ package httpServer
 
 import (
 	"fmt"
-	"log"
-	"net"
 	"strings"
 	"time"
 
@@ -12,17 +10,14 @@ import (
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/helper"
 	swaggerRoutes "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/apiDocumentation"
 	userController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user"
-	protoUserController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user/proto"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/routes"
 	userroutes "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/routes/user"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
-	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/proto/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/samber/do/v2"
-	"google.golang.org/grpc"
 )
 
 type ServerInterface interface {
@@ -32,27 +27,6 @@ type ServerInterface interface {
 type HttpServer struct{}
 
 func (s *HttpServer) Listen() {
-	// Start gRPC server
-	go func() {
-		grpcPort := config.GetGrpcPort()
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
-		if err != nil {
-			log.Fatalf("Failed to listen: %v", err)
-		}
-
-		grpcServer := grpc.NewServer()
-		// pb.RegisterExampleServiceServer(grpcServer, &exampleServiceServer{})
-		puc := do.MustInvoke[*protoUserController.ProtoUserController](di.Injector)
-		user.RegisterUserServiceServer(grpcServer, puc)
-
-		log.Println("gRPC server listening on :", grpcPort)
-		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
-		}
-	}()
-
-	config.SetupReusableEnv()
-
 	fmt.Printf("New Fiber\n")
 	app := fiber.New(fiber.Config{
 		ServerHeader: helper.X_AUTHOR_HEADER_VALUE,
