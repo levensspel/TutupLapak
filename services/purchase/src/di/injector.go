@@ -3,6 +3,7 @@ package di
 import (
 	authJwt "github.com/TimDebug/FitByte/src/auth/jwt"
 	"github.com/TimDebug/FitByte/src/database/postgre"
+	purchaseGrpc "github.com/TimDebug/FitByte/src/grpc"
 	appController "github.com/TimDebug/FitByte/src/http/controllers/purchase"
 	loggerZap "github.com/TimDebug/FitByte/src/logger/zap"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -20,6 +21,10 @@ func init() {
 	//? Logger
 	//? Zap
 	do.Provide[loggerZap.LoggerInterface](Injector, loggerZap.NewLogHandlerInject)
+
+	//? GRPCs
+	//? UserService
+	do.Provide[*purchaseGrpc.ProtoUserController](Injector, purchaseGrpc.NewGRPCClientInject)
 
 	//? Setup Auth
 	//? JWT Service
