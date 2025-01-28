@@ -2,7 +2,6 @@ package userService
 
 import (
 	"context"
-	"fmt"
 
 	authJwt "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/auth/jwt"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/exceptions"
@@ -297,7 +296,6 @@ func (us *userService) UpdateUserProfile(ctx context.Context, input request.Upda
 
 	if input.FileId != "" {
 		file, statusCode := us.fileService.GetFile(ctx, input.FileId)
-		fmt.Println("status", statusCode)
 		if statusCode != fiber.StatusOK {
 			if statusCode != fiber.StatusBadRequest {
 				statusCode = fiber.StatusInternalServerError

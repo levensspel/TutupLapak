@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
@@ -52,7 +51,6 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	}
 
 	userId := claims["userId"].(string)
-	fmt.Println("userId: ", userId)
 	c.Locals("userId", userId)
 
 	return c.Next()

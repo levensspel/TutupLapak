@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
+	"time"
 
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/config"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/di"
@@ -17,6 +19,7 @@ import (
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/proto/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/samber/do/v2"
 	"google.golang.org/grpc"
@@ -46,9 +49,14 @@ func (s *HttpServer) Listen() {
 			log.Fatalf("Failed to serve: %v", err)
 		}
 	}()
+
 	config.FILE_SERVICE_BASE_URL = config.GetFileServiceBaseURL()
 	if config.FILE_SERVICE_BASE_URL == "" {
 		panic("FILE_SERVICE_BASE_URL value requires to be set")
+	}
+	config.MODE = config.GetMode()
+	if config.MODE == "" {
+		panic("MODE value requires to be set")
 	}
 
 	fmt.Printf("New Fiber\n")
@@ -62,13 +70,22 @@ func (s *HttpServer) Listen() {
 		},
 	})
 
-	// terminal logger
-	app.Use(logger.New(logger.Config{
-		Format:     "${time} ${status} - ${method} ${path} - Internal Latency: ${latency}\n",
-		TimeFormat: "2006-01-02 15:04:05",
-	}))
-
 	app.Use(recover.New())
+
+	if strings.ToUpper(config.MODE) == config.MODE_DEBUG {
+		// terminal logger
+		app.Use(logger.New(logger.Config{
+			Format:     "${time} ${status} - ${method} ${path} - Internal Latency: ${latency}\n",
+			TimeFormat: "2006-01-02 15:04:05",
+		}))
+
+		// resource monitoring
+		app.Get("/monitor", monitor.New(monitor.Config{
+			Title:   "User Service Metrics",
+			Refresh: 5 * time.Second,
+			APIOnly: false,
+		}))
+	}
 
 	fmt.Printf("Inject Controllers\n")
 	//? Dependency Injection
