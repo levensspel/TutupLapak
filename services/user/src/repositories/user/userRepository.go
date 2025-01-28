@@ -2,8 +2,10 @@ package userRepository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/repository"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/samber/do/v2"
 )
@@ -17,6 +19,9 @@ type UserRepositoryInterface interface {
 	UpdatePhone(ctx context.Context, pool *pgxpool.Pool, phone, userId string) (user *repository.User, err error)
 	GetUserProfile(ctx context.Context, pool *pgxpool.Pool, userId string) (user *repository.User, err error)
 	UpdateUserProfile(ctx context.Context, pool *pgxpool.Pool, input repository.UpdateUser, userId string) (*repository.User, error)
+
+	GetUserProfiles(ctx context.Context, pool *pgxpool.Pool, userId []string) (user []response.UserResponse, err error)
+	GetUserProfilesWithId(ctx context.Context, pool *pgxpool.Pool, userId []string) (user []response.UserWithIdResponse, err error)
 }
 
 type UserRepository struct {
@@ -252,4 +257,163 @@ func (ur *UserRepository) UpdateUserProfile(ctx context.Context, pool *pgxpool.P
 	}
 
 	return user, nil
+}
+
+// Ambil semua profile user dengan array of userId
+//
+// Returns:
+//   - List<response.UserResponse>
+//   - error
+func (ur *UserRepository) GetUserProfiles(ctx context.Context, pool *pgxpool.Pool, userIds []string) ([]response.UserResponse, error) {
+	var result []response.UserResponse
+
+	// Menyusun query SQL untuk mengambil profil user berdasarkan userId
+	query := `
+		SELECT 
+			id,
+			email,
+			phone,
+			fileId,
+			fileUri,
+			fileThumbnailUri,
+			bankAccountName,
+			bankAccountHolder,
+			bankAccountNumber
+		FROM users 
+		WHERE id = ANY($1::text[]);`
+
+	// Menjalankan query untuk mendapatkan hasil berdasarkan userIds
+	rows, err := pool.Query(ctx, query, userIds)
+	if err != nil {
+		// Mengembalikan error jika query gagal dijalankan
+		return nil, err
+	}
+	// Pastikan rows ditutup setelah selesai digunakan
+	defer rows.Close()
+
+	// Loop untuk membaca setiap baris hasil query
+	for rows.Next() {
+		var user response.UserWithIdResponseSqlNulString
+		// Memindahkan hasil query ke dalam struct user
+		err := rows.Scan(
+			&user.UserId,
+			&user.Email,
+			&user.Phone,
+			&user.FileId,
+			&user.FileUri,
+			&user.FileThumbnailUri,
+			&user.BankAccountName,
+			&user.BankAccountHolder,
+			&user.BankAccountNumber,
+		)
+		if err != nil {
+			// Mengembalikan error jika terjadi kesalahan saat memindahkan data
+			return nil, err
+		}
+		// Menambahkan user ke dalam hasil
+		_res := response.UserResponse{
+			Email:             user.Email.String,
+			Phone:             user.Phone.String,
+			FileId:            user.FileId.String,
+			FileUri:           user.FileUri.String,
+			FileThumbnailUri:  user.FileThumbnailUri.String,
+			BankAccountName:   user.BankAccountName.String,
+			BankAccountHolder: user.BankAccountHolder.String,
+			BankAccountNumber: user.BankAccountNumber.String,
+		}
+		fmt.Printf("Mapped: %s\n", _res)
+		result = append(result, _res)
+		fmt.Printf("Klasement Sementara: %s\n", result)
+	}
+
+	// Memeriksa apakah ada error selama iterasi
+	if err = rows.Err(); err != nil {
+		fmt.Printf("error di rows.Err()!\n")
+		// Mengembalikan error jika ada masalah saat membaca hasil query
+		return nil, err
+	}
+	fmt.Printf("Lanjut return!\n")
+	// Mengembalikan hasil yang sudah lengkap
+	fmt.Printf("Klasement akhir %s\n", result)
+	return result, nil
+}
+
+// Ambil semua profile user dengan array of userId dengan userId yang ngikut
+//
+// Returns:
+//   - List<response.UserWithIdResponse>
+//   - error
+func (ur *UserRepository) GetUserProfilesWithId(ctx context.Context, pool *pgxpool.Pool, userIds []string) ([]response.UserWithIdResponse, error) {
+	var result []response.UserWithIdResponse
+
+	// Menyusun query SQL untuk mengambil profil user berdasarkan userId
+	query := `
+		SELECT 
+			id,
+			email,
+			phone,
+			fileId,
+			fileUri,
+			fileThumbnailUri,
+			bankAccountName,
+			bankAccountHolder,
+			bankAccountNumber
+		FROM users 
+		WHERE id = ANY($1::text[]);`
+
+	// Menjalankan query untuk mendapatkan hasil berdasarkan userIds
+	rows, err := pool.Query(ctx, query, userIds)
+	if err != nil {
+		// Mengembalikan error jika query gagal dijalankan
+		return nil, err
+	}
+	// Pastikan rows ditutup setelah selesai digunakan
+	defer rows.Close()
+
+	// Loop untuk membaca setiap baris hasil query
+	for rows.Next() {
+		var user response.UserWithIdResponseSqlNulString
+		// Memindahkan hasil query ke dalam struct user
+		err := rows.Scan(
+			&user.UserId,
+			&user.Email,
+			&user.Phone,
+			&user.FileId,
+			&user.FileUri,
+			&user.FileThumbnailUri,
+			&user.BankAccountName,
+			&user.BankAccountHolder,
+			&user.BankAccountNumber,
+		)
+		if err != nil {
+			// Mengembalikan error jika terjadi kesalahan saat memindahkan data
+			return nil, err
+		}
+		// Menambahkan user ke dalam hasil
+		_res := response.UserWithIdResponse{
+			UserId:            user.UserId.String,
+			Email:             user.Email.String,
+			Phone:             user.Phone.String,
+			FileId:            user.FileId.String,
+			FileUri:           user.FileUri.String,
+			FileThumbnailUri:  user.FileThumbnailUri.String,
+			BankAccountName:   user.BankAccountName.String,
+			BankAccountHolder: user.BankAccountHolder.String,
+			BankAccountNumber: user.BankAccountNumber.String,
+		}
+		fmt.Printf("Mapped: %s\n", _res)
+		result = append(result, _res)
+		fmt.Printf("Klasement Sementara: %s\n", result)
+	}
+
+	// Memeriksa apakah ada error selama iterasi
+	if err = rows.Err(); err != nil {
+		fmt.Printf("error di rows.Err()!\n")
+		// Mengembalikan error jika ada masalah saat membaca hasil query
+		return nil, err
+	}
+	fmt.Printf("Lanjut return!\n")
+	// Mengembalikan hasil yang sudah lengkap
+	fmt.Printf("Klasement akhir %s\n", result)
+	return result, nil
 }

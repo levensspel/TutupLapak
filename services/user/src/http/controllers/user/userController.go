@@ -43,6 +43,19 @@ func NewUserControllerInject(i do.Injector) (UserControllerInterface, error) {
 	return NewUserController(_userService, _fileService, _logger), nil
 }
 
+// Authentications
+
+// Auth godoc
+// @Summary
+// @Description
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body request.AuthByEmailRequest true "Payload"
+// @Success 201 {object} response.AuthResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/register/email [post]
 func (uc *UserController) RegisterByEmail(ctx *fiber.Ctx) error {
 	userRequestParse := request.AuthByEmailRequest{}
 
@@ -62,6 +75,17 @@ func (uc *UserController) RegisterByEmail(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(response)
 }
 
+// Auth godoc
+// @Summary
+// @Description
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body request.AuthByPhoneRequest true "Payload"
+// @Success 201 {object} response.AuthResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/register/phone [post]
 func (uc *UserController) RegisterByPhone(ctx *fiber.Ctx) error {
 	userRequestParse := request.AuthByPhoneRequest{}
 
@@ -81,6 +105,17 @@ func (uc *UserController) RegisterByPhone(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(response)
 }
 
+// Auth godoc
+// @Summary
+// @Description
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body request.AuthByEmailRequest true "Payload"
+// @Success 200 {object} response.AuthResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/login/email [post]
 func (uc *UserController) LoginByEmail(ctx *fiber.Ctx) error {
 	userRequestParse := request.AuthByEmailRequest{}
 
@@ -99,6 +134,17 @@ func (uc *UserController) LoginByEmail(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
+// Auth godoc
+// @Summary
+// @Description
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body request.AuthByPhoneRequest true "Payload"
+// @Success 200 {object} response.AuthResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/login/phone [post]
 func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
 	userRequestParse := request.AuthByPhoneRequest{}
 
@@ -117,6 +163,21 @@ func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response)
 }
 
+// end Authentications
+
+// User Profile
+
+// UserProfile godoc
+// @Summary
+// @Description
+// @Tags UserProfile
+// @Accept json
+// @Produce json
+// @Param request body request.LinkEmailRequest true "Payload"
+// @Success 200 {object} response.UserResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/user/link/email [post]
 func (uc *UserController) LinkEmail(ctx *fiber.Ctx) error {
 	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
@@ -140,6 +201,17 @@ func (uc *UserController) LinkEmail(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
+// UserProfile godoc
+// @Summary
+// @Description
+// @Tags UserProfile
+// @Accept json
+// @Produce json
+// @Param request body request.LinkPhoneRequest true "Payload"
+// @Success 200 {object} response.UserResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/user/link/phone [post]
 func (uc *UserController) LinkPhone(ctx *fiber.Ctx) error {
 	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
@@ -163,6 +235,16 @@ func (uc *UserController) LinkPhone(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
+// UserProfile godoc
+// @Summary
+// @Description
+// @Tags UserProfile
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.UserResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/user [get]
 func (uc *UserController) GetUserProfile(ctx *fiber.Ctx) error {
 	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
@@ -179,6 +261,17 @@ func (uc *UserController) GetUserProfile(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
+// UserProfile godoc
+// @Summary
+// @Description
+// @Tags UserProfile
+// @Accept json
+// @Produce json
+// @Param request body request.UpdateUserProfileRequest true "Update Profile Payload"
+// @Success 200 {object} response.UserResponse "success response"
+// @Failure 400 {object} map[string]interface{} "bad request"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /v1/user [post]
 func (uc *UserController) UpdateUserProfile(ctx *fiber.Ctx) error {
 	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
@@ -201,3 +294,5 @@ func (uc *UserController) UpdateUserProfile(ctx *fiber.Ctx) error {
 	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
+
+// end User Profile

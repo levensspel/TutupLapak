@@ -5,5 +5,5 @@ logs/*
 .build/*
 build/*
 **/.uploads
-**/app.log
+**/*.log
 **/test_img

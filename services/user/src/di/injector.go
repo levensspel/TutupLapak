@@ -4,6 +4,7 @@ import (
 	authJwt "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/auth/jwt"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/database/postgre"
 	userController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user"
+	protoUserController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user/proto"
 	loggerZap "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/zap"
 	userRepository "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/repositories/user"
 	fileService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/external/file"
@@ -40,7 +41,11 @@ func init() {
 	//? User Controller
 	do.Provide[userController.UserControllerInterface](Injector, userController.NewUserControllerInject)
 
+	//? Proto User Controller
+	do.Provide[*protoUserController.ProtoUserController](Injector, protoUserController.NewProtoUserControllerInject)
+
 	//? Setup Services
 	//? File Service
 	do.Provide[fileService.FileServiceInterface](Injector, fileService.NewFileServiceInject)
+
 }

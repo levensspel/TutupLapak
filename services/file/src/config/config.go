@@ -15,6 +15,7 @@ type Configuration struct {
 	AutoMigrate         bool
 	MigrateFileLocation string
 	IsProduction        bool
+	IsOptimized         bool
 	AWSAccessKey        string
 	AWSSecretAccessKey  string
 	AWSRegion           string
@@ -35,6 +36,7 @@ func New() error {
 	Config.AutoMigrate = GetAutoMigrate()
 	Config.MigrateFileLocation = GetLocationMigrate()
 	Config.IsProduction = isProduction()
+	Config.IsOptimized = isOptimized()
 	Config.AWSAccessKey = getEnv("AWS_ACCESS_KEY_ID", "")
 	Config.AWSSecretAccessKey = getEnv("AWS_SECRET_ACCESS_KEY", "")
 	Config.AWSRegion = getEnv("AWS_REGION", "")
@@ -84,4 +86,11 @@ func GetLocationMigrate() string {
 
 func isProduction() bool {
 	return strings.ToUpper(getEnv("MODE", "DEBUG")) == "PRODUCTION"
+}
+
+func isOptimized() bool {
+	if isProduction() {
+		return false
+	}
+	return strings.ToUpper(getEnv("OPTIMIZE", "FALSE")) == "TRUE"
 }

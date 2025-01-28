@@ -6,13 +6,20 @@ import (
 	"image"
 	"io"
 	"mime/multipart"
+	"runtime"
 	"strings"
 
+	conf "github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/disintegration/imaging"
+	wpool "github.com/gammazero/workerpool"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+)
+
+var (
+	c conf.Configuration = conf.Config
 )
 
 type FileEntity struct {
@@ -24,12 +31,14 @@ type FileEntity struct {
 type FileService struct {
 	Repo          FileRepository
 	StorageClient StorageClient
+	wp            *wpool.WorkerPool
 }
 
 func NewFileService(repo FileRepository, storageClient StorageClient) FileService {
 	return FileService{
 		Repo:          repo,
 		StorageClient: storageClient,
+		wp:            wpool.New(runtime.NumCPU() * 3),
 	}
 }
 
@@ -44,23 +53,77 @@ func (fs *FileService) UploadFile(
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
-	mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
-	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+	if c.IsOptimized {
+		mainFileUriChan := make(chan string, 1)
+		thumbnailUriChan := make(chan string, 1)
+		errorChan := make(chan error, 2)
+
+		fs.wp.Submit(func() {
+			// Step 1: Upload main file to S3
+			mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
+			if err != nil {
+				errorChan <- fmt.Errorf("main file upload failed: %w", err)
+				return
+			}
+			mainFileUriChan <- mainUri
+		})
+
+		fs.wp.Submit(func() {
+			// Step 2: Compress the main file
+			fileBuf, err := fs.compressImage(fileContent)
+			if err != nil {
+				errorChan <- fmt.Errorf("thumbnail compression failed: %w", err)
+				return
+			}
+
+			// Step 3: Upload thumbnail to S3
+			thumbFileName := fmt.Sprintf("thumbnail-%s", targetFilename)
+			thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
+			if err != nil {
+				errorChan <- fmt.Errorf("thumbnail upload failed: %w", err)
+				return
+			}
+			thumbnailUriChan <- thumbnailUri
+		})
+
+		var mainUri, thumbnailUri string
+
+		for i := 0; i < 2; i++ {
+			select {
+			case err := <-errorChan:
+				return nil, err
+			case uri := <-mainFileUriChan:
+				mainUri = uri
+			case uri := <-thumbnailUriChan:
+				thumbnailUri = uri
+			}
+		}
+
+		entity, err := fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
+		if err != nil {
+			return nil, fmt.Errorf("database insert failed: %w", err)
+		}
+
+		return entity, nil
+	} else {
+		mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
+		if err != nil {
+			return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+		}
+		// compress file into thumbnail
+		fileBuf, err := fs.compressImage(fileContent)
+		if err != nil {
+			return nil, &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
+		}
+		// upload the thumbnail to S3
+		thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
+		thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
+		if err != nil {
+			return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+		}
+		// store the record
+		return fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
 	}
-	// compress file into thumbnail
-	fileBuf, err := fs.compressImage(fileContent)
-	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
-	}
-	// upload the thumbnail to S3
-	thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
-	thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
-	if err != nil {
-		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
-	}
-	// store the record
-	return fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
 }
 
 func (fs *FileService) compressImage(content []byte) ([]byte, error) {
@@ -112,4 +175,8 @@ func (fs *FileService) CheckExist(ctx *fiber.Ctx, fileId string) (*FileEntity, e
 		return nil, &fiber.Error{Code: 500, Message: "server error"}
 	}
 	return entity, nil
+}
+
+func (fs *FileService) Shutdown() {
+	fs.wp.StopWait()
 }

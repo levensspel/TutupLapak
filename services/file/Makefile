@@ -16,4 +16,7 @@ migrate_up:
 migrate_down:
 	migrate -path=database/migrations -database "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" -verbose down
 
-.PHONY: run create_migration migrate_up migrate_down
+clean_uploads:
+	find .uploads -type f -delete
+
+.PHONY: run create_migration migrate_up migrate_down clean_uploads
