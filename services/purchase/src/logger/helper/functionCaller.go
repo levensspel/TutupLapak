@@ -27,4 +27,6 @@ const (
 
 	PurhcaseControllerPutCart      FunctionCaller = "purchaseController.PutCart"
 	CachePurhcaseControllerPutCart FunctionCaller = "purchaseController.PutCartCache"
+
+	GRPCClientSetup FunctionCaller = "purchaseGrpc.NewGRPCClientInject"
 )
