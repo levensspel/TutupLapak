@@ -2,7 +2,6 @@ package userRepository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/repository"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
@@ -321,20 +320,15 @@ func (ur *UserRepository) GetUserProfiles(ctx context.Context, pool *pgxpool.Poo
 			BankAccountHolder: user.BankAccountHolder.String,
 			BankAccountNumber: user.BankAccountNumber.String,
 		}
-		fmt.Printf("Mapped: %s\n", _res)
 		result = append(result, _res)
-		fmt.Printf("Klasement Sementara: %s\n", result)
 	}
 
 	// Memeriksa apakah ada error selama iterasi
 	if err = rows.Err(); err != nil {
-		fmt.Printf("error di rows.Err()!\n")
 		// Mengembalikan error jika ada masalah saat membaca hasil query
 		return nil, err
 	}
-	fmt.Printf("Lanjut return!\n")
 	// Mengembalikan hasil yang sudah lengkap
-	fmt.Printf("Klasement akhir %s\n", result)
 	return result, nil
 }
 
@@ -401,19 +395,14 @@ func (ur *UserRepository) GetUserProfilesWithId(ctx context.Context, pool *pgxpo
 			BankAccountHolder: user.BankAccountHolder.String,
 			BankAccountNumber: user.BankAccountNumber.String,
 		}
-		fmt.Printf("Mapped: %s\n", _res)
 		result = append(result, _res)
-		fmt.Printf("Klasement Sementara: %s\n", result)
 	}
 
 	// Memeriksa apakah ada error selama iterasi
 	if err = rows.Err(); err != nil {
-		fmt.Printf("error di rows.Err()!\n")
 		// Mengembalikan error jika ada masalah saat membaca hasil query
 		return nil, err
 	}
-	fmt.Printf("Lanjut return!\n")
 	// Mengembalikan hasil yang sudah lengkap
-	fmt.Printf("Klasement akhir %s\n", result)
 	return result, nil
 }

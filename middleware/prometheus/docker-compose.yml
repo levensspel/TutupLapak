@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  tutuplapak-local-prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9095:9090"
+    networks:
+      - tutuplapak-network
+
+  tutuplapak-local-grafana:
+    image: grafana/grafana
+    ports:
+      - "3015:3000"
+    networks:
+      - tutuplapak-network
+
+networks:
+  tutuplapak-network:
+    external: false  

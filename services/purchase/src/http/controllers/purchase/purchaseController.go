@@ -47,7 +47,7 @@ func NewPurchaseController(logger loggerZap.LoggerInterface) IPurchaseController
 		}
 	})
 
-	return &PurchaseController{logger: logger, validator: xValidator, userServiceAddress: "localhost:50051"}
+	return &PurchaseController{logger: logger, validator: xValidator, userServiceAddress: "host.docker.internal:50051"}
 }
 
 func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
@@ -141,25 +141,29 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke angka
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse Qty")
+				return err
 			}
-			_price, err := strconv.ParseFloat(cachedProductValue["Qty"], 64) // Atoi = ASCII to Integer
+			_price, err := strconv.ParseFloat(cachedProductValue["Price"], 64) // Atoi = ASCII to Integer
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke floating number
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse Price")
+				return err
 			}
 			_createdAt, err := time.Parse(time.RFC3339, cachedProductValue["CreatedAt"])
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke Time sesuai dengan ISO
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse CreatedAt")
+				return err
 			}
 			_modifiedAt, err := time.Parse(time.RFC3339, cachedProductValue["UpdatedAt"])
 			if err != nil {
 				// Tangani error jika string tidak bisa dikonversi ke Time sesuai dengan ISO
 				fmt.Println("Error:", err)
-				panic(err.Error())
+				pc.logger.Error(err.Error(), functionCallerInfo.CachePurhcaseControllerPutCart, "Parse ModifiedAt")
+				return err
 			}
 
 			_sellerId := cachedProductValue["SellerId"]
@@ -305,10 +309,14 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	}
 	// todo; get SellerId berdasarkan produkId
 	if len(toGetSellersById) > 0 {
+		// Mulai pengukuran waktu
+		start := time.Now()
+
 		// kirim batch
 		connection, err := grpc.Dial(pc.userServiceAddress, grpc.WithInsecure())
 		if err != nil {
-			panic(fmt.Errorf("failed to connect to gRPC server: %w", err))
+			pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, "Grpc Connection")
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("failed to connect to gRPC server: %s\n", err.Error()))
 		}
 		defer connection.Close()
 
@@ -323,7 +331,8 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 		// dapat response
 		grpcResponse, err := userServiceClient.GetUserDetailsWithId(ctx, &user.UserRequest{UserIds: toGetSellersById})
 		if err != nil {
-			panic(fmt.Errorf("error during gRPC call: %w", err))
+			pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, "Grpc Call")
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("error during gRPC call: %s\n", err.Error()))
 		}
 		// masukan ke respons.dto
 		for _, item := range grpcResponse.Users {
@@ -335,7 +344,12 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 			})
 		}
 		connection.Close()
+
+		// Catat waktu selesai
+		elapsed := time.Since(start)
+		fmt.Printf("GRPC CALL>> Batch processing took %s", elapsed)
 	}
+	cleanStart := time.Now()
 	// todo; compile respond
 
 	// todo; free temporaries
@@ -345,6 +359,10 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	cachedProducts = nil
 	toGetSellersById = nil
 	runtime.GC()
+
+	// Catat waktu selesai
+	cleanElapsed := time.Since(cleanStart)
+	fmt.Printf("CLEAN FREE>> Batch processing took %s", cleanElapsed)
 	//
 	return c.Status(fiber.StatusOK).JSON(cart)
 }
