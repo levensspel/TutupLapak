@@ -34,7 +34,8 @@ type HttpServer struct{}
 func (s *HttpServer) Listen() {
 	// Start gRPC server
 	go func() {
-		lis, err := net.Listen("tcp", ":50051")
+		grpcPort := config.GetGrpcPort()
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
 		if err != nil {
 			log.Fatalf("Failed to listen: %v", err)
 		}
@@ -44,20 +45,13 @@ func (s *HttpServer) Listen() {
 		puc := do.MustInvoke[*protoUserController.ProtoUserController](di.Injector)
 		user.RegisterUserServiceServer(grpcServer, puc)
 
-		log.Println("gRPC server listening on :50051")
+		log.Println("gRPC server listening on :", grpcPort)
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
 	}()
 
-	config.FILE_SERVICE_BASE_URL = config.GetFileServiceBaseURL()
-	if config.FILE_SERVICE_BASE_URL == "" {
-		panic("FILE_SERVICE_BASE_URL value requires to be set")
-	}
-	config.MODE = config.GetMode()
-	if config.MODE == "" {
-		panic("MODE value requires to be set")
-	}
+	config.SetupReusableEnv()
 
 	fmt.Printf("New Fiber\n")
 	app := fiber.New(fiber.Config{
