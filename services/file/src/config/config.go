@@ -10,6 +10,7 @@ import (
 
 type Configuration struct {
 	Port                string
+	GRPCPort            string
 	DBConnection        string
 	DBConnectionMigrate string
 	AutoMigrate         bool
@@ -31,6 +32,7 @@ func New() error {
 	}
 	Config = Configuration{}
 	Config.Port = GetPort()
+	Config.GRPCPort = getEnv("GRPC_PORT", "5000")
 	Config.DBConnection = GetDBConnection()
 	Config.DBConnectionMigrate = GetDBConnectionMigrate()
 	Config.AutoMigrate = GetAutoMigrate()
