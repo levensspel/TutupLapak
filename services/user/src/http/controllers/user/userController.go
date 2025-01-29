@@ -56,23 +56,23 @@ func NewUserControllerInject(i do.Injector) (UserControllerInterface, error) {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/register/email [post]
-func (uc *UserController) RegisterByEmail(c *fiber.Ctx) error {
+func (uc *UserController) RegisterByEmail(ctx *fiber.Ctx) error {
 	userRequestParse := request.AuthByEmailRequest{}
 
-	if err := c.BodyParser(&userRequestParse); err != nil {
+	if err := ctx.BodyParser(&userRequestParse); err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerRegisterByEmail)
-		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+		return ctx.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.RegisterByEmail(c, userRequestParse)
+	response, err := uc.userService.RegisterByEmail(ctx.Context(), userRequestParse)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerRegisterByEmail, userRequestParse)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).
 			JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusCreated).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusCreated).JSON(response)
 }
 
 // Auth godoc
@@ -86,23 +86,23 @@ func (uc *UserController) RegisterByEmail(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/register/phone [post]
-func (uc *UserController) RegisterByPhone(c *fiber.Ctx) error {
+func (uc *UserController) RegisterByPhone(ctx *fiber.Ctx) error {
 	userRequestParse := request.AuthByPhoneRequest{}
 
-	if err := c.BodyParser(&userRequestParse); err != nil {
+	if err := ctx.BodyParser(&userRequestParse); err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerRegisterByPhone)
-		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+		return ctx.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.RegisterByPhone(c, userRequestParse)
+	response, err := uc.userService.RegisterByPhone(ctx.Context(), userRequestParse)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerRegisterByPhone, userRequestParse)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).
 			JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusCreated).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusCreated).JSON(response)
 }
 
 // Auth godoc
@@ -116,22 +116,22 @@ func (uc *UserController) RegisterByPhone(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/login/email [post]
-func (uc *UserController) LoginByEmail(c *fiber.Ctx) error {
+func (uc *UserController) LoginByEmail(ctx *fiber.Ctx) error {
 	userRequestParse := request.AuthByEmailRequest{}
 
-	if err := c.BodyParser(&userRequestParse); err != nil {
+	if err := ctx.BodyParser(&userRequestParse); err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLoginByEmail)
-		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+		return ctx.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.LoginByEmail(c, userRequestParse)
+	response, err := uc.userService.LoginByEmail(ctx.Context(), userRequestParse)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLoginByEmail, userRequestParse)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusOK).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
 // Auth godoc
@@ -153,7 +153,7 @@ func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.LoginByPhone(c, userRequestParse)
+	response, err := uc.userService.LoginByPhone(c.Context(), userRequestParse)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLoginByPhone, userRequestParse)
 		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
@@ -178,27 +178,27 @@ func (uc *UserController) LoginByPhone(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/user/link/email [post]
-func (uc *UserController) LinkEmail(c *fiber.Ctx) error {
-	userId, ok := c.Locals("userId").(string)
+func (uc *UserController) LinkEmail(ctx *fiber.Ctx) error {
+	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+		return ctx.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
 	}
 
 	userRequestParse := request.LinkEmailRequest{}
 
-	if err := c.BodyParser(&userRequestParse); err != nil {
+	if err := ctx.BodyParser(&userRequestParse); err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkEmail)
-		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+		return ctx.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.LinkEmail(c, userRequestParse, userId)
+	response, err := uc.userService.LinkEmail(ctx.Context(), userRequestParse, userId)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkEmail, userRequestParse)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusOK).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
 // UserProfile godoc
@@ -212,27 +212,27 @@ func (uc *UserController) LinkEmail(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/user/link/phone [post]
-func (uc *UserController) LinkPhone(c *fiber.Ctx) error {
-	userId, ok := c.Locals("userId").(string)
+func (uc *UserController) LinkPhone(ctx *fiber.Ctx) error {
+	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+		return ctx.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
 	}
 
 	userRequestParse := request.LinkPhoneRequest{}
 
-	if err := c.BodyParser(&userRequestParse); err != nil {
+	if err := ctx.BodyParser(&userRequestParse); err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone)
-		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+		return ctx.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.LinkPhone(c, userRequestParse, userId)
+	response, err := uc.userService.LinkPhone(ctx.Context(), userRequestParse, userId)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerLinkPhone, userRequestParse)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusOK).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
 // UserProfile godoc
@@ -245,20 +245,20 @@ func (uc *UserController) LinkPhone(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/user [get]
-func (uc *UserController) GetUserProfile(c *fiber.Ctx) error {
-	userId, ok := c.Locals("userId").(string)
+func (uc *UserController) GetUserProfile(ctx *fiber.Ctx) error {
+	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+		return ctx.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
 	}
 
-	response, err := uc.userService.GetUserProfile(c, userId)
+	response, err := uc.userService.GetUserProfile(ctx.Context(), userId)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerGetUserProfile)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusOK).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
 // UserProfile godoc
@@ -272,27 +272,27 @@ func (uc *UserController) GetUserProfile(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "bad request"
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/user [post]
-func (uc *UserController) UpdateUserProfile(c *fiber.Ctx) error {
-	userId, ok := c.Locals("userId").(string)
+func (uc *UserController) UpdateUserProfile(ctx *fiber.Ctx) error {
+	userId, ok := ctx.Locals("userId").(string)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
+		return ctx.Status(fiber.StatusUnauthorized).JSON(exceptions.ErrUnauthorized)
 	}
 
 	userRequestParse := request.UpdateUserProfileRequest{}
 
-	if err := c.BodyParser(&userRequestParse); err != nil {
+	if err := ctx.BodyParser(&userRequestParse); err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerUpdateUserProfile)
-		return c.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
+		return ctx.Status(http.StatusBadRequest).JSON(exceptions.ErrBadRequest(err.Error()))
 	}
 
-	response, err := uc.userService.UpdateUserProfile(c, userRequestParse, userId)
+	response, err := uc.userService.UpdateUserProfile(ctx.Context(), userRequestParse, userId)
 	if err != nil {
 		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerUpdateUserProfile)
-		return c.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
 	}
 
-	c.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
-	return c.Status(fiber.StatusOK).JSON(response)
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
 // end User Profile

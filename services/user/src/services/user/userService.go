@@ -2,7 +2,6 @@ package userService
 
 import (
 	"context"
-	"fmt"
 
 	authJwt "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/auth/jwt"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/exceptions"
@@ -22,17 +21,15 @@ import (
 )
 
 type UserServiceInterface interface {
-	RegisterByEmail(ctx *fiber.Ctx, input request.AuthByEmailRequest) (response.AuthResponse, error)
-	RegisterByPhone(ctx *fiber.Ctx, input request.AuthByPhoneRequest) (response.AuthResponse, error)
-	LoginByEmail(ctx *fiber.Ctx, input request.AuthByEmailRequest) (response.AuthResponse, error)
-	LoginByPhone(ctx *fiber.Ctx, input request.AuthByPhoneRequest) (response.AuthResponse, error)
+	RegisterByEmail(ctx context.Context, input request.AuthByEmailRequest) (response.AuthResponse, error)
+	RegisterByPhone(ctx context.Context, input request.AuthByPhoneRequest) (response.AuthResponse, error)
+	LoginByEmail(ctx context.Context, input request.AuthByEmailRequest) (response.AuthResponse, error)
+	LoginByPhone(ctx context.Context, input request.AuthByPhoneRequest) (response.AuthResponse, error)
 
-	LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest, userId string) (response.UserResponse, error)
-	LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest, userId string) (response.UserResponse, error)
-	GetUserProfile(ctx *fiber.Ctx, userId string) (response.UserResponse, error)
-	UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error)
-
-	//for grpc
+	LinkEmail(ctx context.Context, input request.LinkEmailRequest, userId string) (response.UserResponse, error)
+	LinkPhone(ctx context.Context, input request.LinkPhoneRequest, userId string) (response.UserResponse, error)
+	GetUserProfile(ctx context.Context, userId string) (response.UserResponse, error)
+	UpdateUserProfile(ctx context.Context, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error) //for grpc
 
 	GetUserProfiles(ctx context.Context, userId []string) ([]response.UserResponse, error)
 	GetUserProfilesWithId(ctx context.Context, userId []string) ([]response.UserWithIdResponse, error)
@@ -72,7 +69,7 @@ func NewUserServiceInject(i do.Injector) (UserServiceInterface, error) {
 	return NewUserService(_userRepo, _db, _jwtService, _fileService, _logger), nil
 }
 
-func (us *userService) RegisterByEmail(ctx *fiber.Ctx, input request.AuthByEmailRequest) (response.AuthResponse, error) {
+func (us *userService) RegisterByEmail(ctx context.Context, input request.AuthByEmailRequest) (response.AuthResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.AuthResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -86,7 +83,7 @@ func (us *userService) RegisterByEmail(ctx *fiber.Ctx, input request.AuthByEmail
 
 	passwordHash := string(hash)
 
-	userId, err := us.UserRepository.CreateUserByEmail(context.Background(), us.Db, input.Email, passwordHash)
+	userId, err := us.UserRepository.CreateUserByEmail(ctx, us.Db, input.Email, passwordHash)
 	if err != nil {
 		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryCreateUserByEmail, err)
 
@@ -107,7 +104,7 @@ func (us *userService) RegisterByEmail(ctx *fiber.Ctx, input request.AuthByEmail
 	}, nil
 }
 
-func (us *userService) RegisterByPhone(ctx *fiber.Ctx, input request.AuthByPhoneRequest) (response.AuthResponse, error) {
+func (us *userService) RegisterByPhone(ctx context.Context, input request.AuthByPhoneRequest) (response.AuthResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.AuthResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -142,7 +139,7 @@ func (us *userService) RegisterByPhone(ctx *fiber.Ctx, input request.AuthByPhone
 	}, nil
 }
 
-func (us *userService) LoginByEmail(ctx *fiber.Ctx, input request.AuthByEmailRequest) (response.AuthResponse, error) {
+func (us *userService) LoginByEmail(ctx context.Context, input request.AuthByEmailRequest) (response.AuthResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.AuthResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -179,7 +176,7 @@ func (us *userService) LoginByEmail(ctx *fiber.Ctx, input request.AuthByEmailReq
 	}, nil
 }
 
-func (us *userService) LoginByPhone(ctx *fiber.Ctx, input request.AuthByPhoneRequest) (response.AuthResponse, error) {
+func (us *userService) LoginByPhone(ctx context.Context, input request.AuthByPhoneRequest) (response.AuthResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.AuthResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -216,7 +213,7 @@ func (us *userService) LoginByPhone(ctx *fiber.Ctx, input request.AuthByPhoneReq
 	}, nil
 }
 
-func (us *userService) LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest, userId string) (response.UserResponse, error) {
+func (us *userService) LinkEmail(ctx context.Context, input request.LinkEmailRequest, userId string) (response.UserResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.UserResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -241,7 +238,7 @@ func (us *userService) LinkEmail(ctx *fiber.Ctx, input request.LinkEmailRequest,
 	return response, nil
 }
 
-func (us *userService) LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest, userId string) (response.UserResponse, error) {
+func (us *userService) LinkPhone(ctx context.Context, input request.LinkPhoneRequest, userId string) (response.UserResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.UserResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -266,7 +263,7 @@ func (us *userService) LinkPhone(ctx *fiber.Ctx, input request.LinkPhoneRequest,
 	return response, nil
 }
 
-func (us *userService) GetUserProfile(ctx *fiber.Ctx, userId string) (response.UserResponse, error) {
+func (us *userService) GetUserProfile(ctx context.Context, userId string) (response.UserResponse, error) {
 	user, err := us.UserRepository.GetUserProfile(context.Background(), us.Db, userId)
 	if err != nil {
 		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryGetUserProfile, err)
@@ -285,7 +282,7 @@ func (us *userService) GetUserProfile(ctx *fiber.Ctx, userId string) (response.U
 	return response, nil
 }
 
-func (us *userService) UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error) {
+func (us *userService) UpdateUserProfile(ctx context.Context, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error) {
 	err := validator.ValidateStructFields(input)
 	if err != nil {
 		return response.UserResponse{}, exceptions.ErrBadRequest(err.Error())
@@ -299,7 +296,6 @@ func (us *userService) UpdateUserProfile(ctx *fiber.Ctx, input request.UpdateUse
 
 	if input.FileId != "" {
 		file, statusCode := us.fileService.GetFile(ctx, input.FileId)
-		fmt.Println("status", statusCode)
 		if statusCode != fiber.StatusOK {
 			if statusCode != fiber.StatusBadRequest {
 				statusCode = fiber.StatusInternalServerError

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/config"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/database/migrations"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/di"
 	userGrpc "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/grpc"
@@ -17,6 +18,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	config.SetupReusableEnv()
+
 	fmt.Printf("DI Healthcheck\n")
 	di.HealthCheck()
 
