@@ -9,6 +9,7 @@ import (
 	"github.com/TimDebug/TutupLapak/File/src/http/middleware/errorHandler"
 	"github.com/TimDebug/TutupLapak/File/src/http/middleware/identifier"
 	localLog "github.com/TimDebug/TutupLapak/File/src/logger"
+	"github.com/TimDebug/TutupLapak/File/src/repo"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -44,14 +45,13 @@ func (s *HttpServer) Listen() {
 	} else {
 		storageClient = NewMockS3StorageClient()
 	}
-	repo := NewFileRepository(db)
+	repo := repo.NewFileRepository(db)
 	service := NewFileService(repo, storageClient)
 	defer service.Shutdown()
 	controller := NewFileController(service)
 
 	routes := app.Group("/v1")
 	routes.Post("/file", controller.Upload)
-	routes.Get("/file/:fileId", controller.CheckExist)
 
 	app.Listen(fmt.Sprintf("%s:%s", "0.0.0.0", config.GetPort()))
 }

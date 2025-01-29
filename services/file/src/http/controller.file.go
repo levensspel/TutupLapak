@@ -90,13 +90,3 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
-
-func (f *FileController) CheckExist(ctx *fiber.Ctx) error {
-	fileId := ctx.Params("fileId")
-	fileEntity, err := f.Service.CheckExist(ctx, fileId)
-	if err != nil {
-		return err
-	}
-	return ctx.Status(fiber.StatusOK).
-		JSON(fileEntity)
-}

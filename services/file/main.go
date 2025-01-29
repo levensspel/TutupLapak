@@ -5,15 +5,19 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
 	"syscall"
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/database/migrations"
+	"github.com/TimDebug/TutupLapak/File/src/grpc"
 	httpServer "github.com/TimDebug/TutupLapak/File/src/http"
 	log "github.com/TimDebug/TutupLapak/File/src/logger"
 )
 
 func main() {
+	var wg sync.WaitGroup
+
 	// Initialize logger
 	err := log.Init()
 	if err != nil {
@@ -51,6 +55,20 @@ func main() {
 	}()
 
 	// Run http server
-	server := httpServer.HttpServer{}
-	server.Listen()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		server := httpServer.HttpServer{}
+		server.Listen()
+	}()
+
+	// run grpc server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		server := grpc.GrpcServer{}
+		server.Listen()
+	}()
+
+	wg.Wait()
 }
