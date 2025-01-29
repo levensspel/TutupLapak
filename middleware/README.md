@@ -1,3 +1,7 @@
+## Cache Server
+in real case, cache server would be installed right onto the vm itself, without docker
+this repository meant to initialize local development with redis
+
 ## Cache Client
 cacheclient here is the codebase of cache client. It can be easily copied to any service that needs distributed caching
 
