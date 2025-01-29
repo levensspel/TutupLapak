@@ -17,6 +17,8 @@ services:
       - PROD_HOST=${PROD_HOST}
       - DEBUG_HOST=${DEBUG_HOST}
       - PORT=${PORT}
+      - GPRC_USER_HOST=${GPRC_USER_HOST_DEV}
+      - GPRC_USER_PORT=${GPRC_USER_PORT}
       - HTTP_PROXY=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - NO_PROXY=${NO_PROXY}

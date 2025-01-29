@@ -68,7 +68,6 @@ func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
 // @Failure 500 {object} map[string]interface{} "internal server error"
 // @Router /v1/purchase [post]
 func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
-	fmt.Printf("INI\nITU\n")
 	//// todo; Parse Body
 	requestBody := new(request.CartDto)
 	if err := c.BodyParser(requestBody); err != nil {
@@ -109,8 +108,7 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	// parameter
 	// 	- string: sellerId
 	// 	- int: index
-	var mapSellerId map[string]int
-	mapSellerId = make(map[string]int)
+	mapSellerId := make(map[string]int)
 	// berperan sebagai pointer index untuk mapSellerId
 	var pointerIndexSellerId int = 0
 	// berisi total harga yang akan dibawar oleh pembeli, index berdasarkan sellerId
@@ -342,7 +340,6 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 		elapsed := time.Since(start)
 		fmt.Printf("GRPC CALL >> Batch processing took %s\n", elapsed)
 	}
-	cleanStart := time.Now()
 	// todo; compile respond
 
 	// todo; free temporaries
@@ -354,10 +351,6 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	go func() {
 		runtime.GC()
 	}()
-
-	// Catat waktu selesai
-	cleanElapsed := time.Since(cleanStart)
-	fmt.Printf("CLEAN FREE>> Batch processing took %s\n", cleanElapsed)
 	//
 	return c.Status(fiber.StatusCreated).JSON(cart)
 }
