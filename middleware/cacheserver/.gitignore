@@ -1,0 +1,8 @@
+.env
+.envrc
+storage/*
+public/*
+logs/*
+.build/*
+build/*
+.uploads/*
