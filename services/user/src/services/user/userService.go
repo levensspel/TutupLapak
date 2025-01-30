@@ -337,13 +337,10 @@ func (us *userService) UpdateUserProfile(ctx context.Context, input request.Upda
 	}
 
 	if input.FileId != "" {
-		file, statusCode := us.fileService.GetFile(ctx, input.FileId)
-		if statusCode != fiber.StatusOK {
-			if statusCode != fiber.StatusBadRequest {
-				statusCode = fiber.StatusInternalServerError
-			}
+		file, ok := us.fileService.GetFile(ctx, input.FileId)
+		if !ok {
 			// *Logging is done in the fileService implementation
-			return response.UserResponse{}, exceptions.NewErrorResponse(int16(statusCode), "File error")
+			return response.UserResponse{}, exceptions.NewErrorResponse(fiber.StatusBadRequest, "Bad request")
 		}
 
 		updateUser.FileId = &input.FileId
