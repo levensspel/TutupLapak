@@ -7,9 +7,11 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
+var appConfig *config.Configuration = config.GetConfig()
+
 func Migrate() error {
-	if config.GetAutoMigrate() {
-		migrated, err := migrate.New(config.GetLocationMigrate(), config.GetDBConnectionMigrate())
+	if appConfig.AutoMigrate {
+		migrated, err := migrate.New(appConfig.MigrateFileLocation, appConfig.DBConnectionMigrate)
 		if err != nil {
 			return err
 		}

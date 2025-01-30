@@ -1,7 +1,9 @@
-package httpServer
+package repo
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"context"
+
+	"github.com/TimDebug/TutupLapak/File/src/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -15,26 +17,26 @@ func NewFileRepository(db *pgxpool.Pool) FileRepository {
 	}
 }
 
-func (r *FileRepository) InsertURI(ctx *fiber.Ctx, fileUri string, thumbnailUri string) (*FileEntity, error) {
-	entity := new(FileEntity)
+func (r *FileRepository) InsertURI(ctx context.Context, fileUri string, thumbnailUri string) (*models.FileEntity, error) {
+	entity := new(models.FileEntity)
 	query := `
 		INSERT INTO files (fileuri, thumbnailuri)
 		VALUES($1, $2)
 		RETURNING id, fileuri, thumbnailuri;
 	`
-	row := r.DB.QueryRow(ctx.Context(), query, fileUri, thumbnailUri)
+	row := r.DB.QueryRow(ctx, query, fileUri, thumbnailUri)
 	err := row.Scan(&entity.FileID, &entity.FileURI, &entity.ThumbnailURI)
 	return entity, err
 }
 
-func (r *FileRepository) GetRecordsById(ctx *fiber.Ctx, fileId string) (*FileEntity, error) {
+func (r *FileRepository) GetRecordsById(ctx context.Context, fileId string) (*models.FileEntity, error) {
 	query := `
 		SELECT id, fileuri, thumbnailuri
 		FROM files
 		WHERE id = $1;
 	`
-	row := r.DB.QueryRow(ctx.Context(), query, fileId)
-	entity := new(FileEntity)
+	row := r.DB.QueryRow(ctx, query, fileId)
+	entity := new(models.FileEntity)
 	err := row.Scan(&entity.FileID, &entity.FileURI, &entity.ThumbnailURI)
 	if err != nil {
 		return nil, err

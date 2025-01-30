@@ -7,7 +7,6 @@ type User struct {
 	Email             string
 	PasswordHash      string
 	Phone             string
-	Password_hash     string
 	FileId            string
 	FileUri           string
 	FileThumbnailUri  string

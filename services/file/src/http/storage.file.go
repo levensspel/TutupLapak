@@ -43,7 +43,7 @@ type StorageClient interface {
 var (
 	s3StorageClientOnce     sync.Once
 	s3StorageClientInstance *S3StorageClient
-	appConfig               config.Configuration = config.Config
+	appConfig               *config.Configuration = config.GetConfig()
 )
 
 type S3StorageClient struct {

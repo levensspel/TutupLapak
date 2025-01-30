@@ -11,30 +11,24 @@ import (
 
 	conf "github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/logger"
+	"github.com/TimDebug/TutupLapak/File/src/models"
+	"github.com/TimDebug/TutupLapak/File/src/repo"
 	"github.com/disintegration/imaging"
 	wpool "github.com/gammazero/workerpool"
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
-	c conf.Configuration = conf.Config
+	c *conf.Configuration = conf.GetConfig()
 )
 
-type FileEntity struct {
-	FileID       string `json:"fileId"`
-	FileURI      string `json:"fileUri"`
-	ThumbnailURI string `json:"fileThumbnailUri"`
-}
-
 type FileService struct {
-	Repo          FileRepository
+	Repo          repo.FileRepository
 	StorageClient StorageClient
 	wp            *wpool.WorkerPool
 }
 
-func NewFileService(repo FileRepository, storageClient StorageClient) FileService {
+func NewFileService(repo repo.FileRepository, storageClient StorageClient) FileService {
 	return FileService{
 		Repo:          repo,
 		StorageClient: storageClient,
@@ -48,82 +42,60 @@ func (fs *FileService) UploadFile(
 	targetFilename string,
 	file multipart.File,
 	mimetype string,
-) (*FileEntity, error) {
+) (*models.FileEntity, error) {
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
-	if c.IsOptimized {
-		mainFileUriChan := make(chan string, 1)
-		thumbnailUriChan := make(chan string, 1)
-		errorChan := make(chan error, 2)
 
-		fs.wp.Submit(func() {
-			// Step 1: Upload main file to S3
-			mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
-			if err != nil {
-				errorChan <- fmt.Errorf("main file upload failed: %w", err)
-				return
-			}
-			mainFileUriChan <- mainUri
-		})
+	mainFileUriChan := make(chan string, 1)
+	thumbnailUriChan := make(chan string, 1)
+	errorChan := make(chan error, 2)
 
-		fs.wp.Submit(func() {
-			// Step 2: Compress the main file
-			fileBuf, err := fs.compressImage(fileContent)
-			if err != nil {
-				errorChan <- fmt.Errorf("thumbnail compression failed: %w", err)
-				return
-			}
-
-			// Step 3: Upload thumbnail to S3
-			thumbFileName := fmt.Sprintf("thumbnail-%s", targetFilename)
-			thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
-			if err != nil {
-				errorChan <- fmt.Errorf("thumbnail upload failed: %w", err)
-				return
-			}
-			thumbnailUriChan <- thumbnailUri
-		})
-
-		var mainUri, thumbnailUri string
-
-		for i := 0; i < 2; i++ {
-			select {
-			case err := <-errorChan:
-				return nil, err
-			case uri := <-mainFileUriChan:
-				mainUri = uri
-			case uri := <-thumbnailUriChan:
-				thumbnailUri = uri
-			}
-		}
-
-		entity, err := fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
-		if err != nil {
-			return nil, fmt.Errorf("database insert failed: %w", err)
-		}
-
-		return entity, nil
-	} else {
+	fs.wp.Submit(func() {
 		mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
 		if err != nil {
-			return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+			errorChan <- fmt.Errorf("main file upload failed: %w", err)
+			return
 		}
-		// compress file into thumbnail
+		mainFileUriChan <- mainUri
+	})
+
+	fs.wp.Submit(func() {
 		fileBuf, err := fs.compressImage(fileContent)
 		if err != nil {
-			return nil, &fiber.Error{Code: 500, Message: fmt.Sprintf("unable to compress file: %+v", err)}
+			errorChan <- fmt.Errorf("thumbnail compression failed: %w", err)
+			return
 		}
-		// upload the thumbnail to S3
-		thumbFileName := fmt.Sprintf("%s-%s", "thumbnail", targetFilename)
+
+		thumbFileName := fmt.Sprintf("thumbnail-%s", targetFilename)
 		thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
 		if err != nil {
-			return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
+			errorChan <- fmt.Errorf("thumbnail upload failed: %w", err)
+			return
 		}
-		// store the record
-		return fs.Repo.InsertURI(ctx, mainUri, thumbnailUri)
+		thumbnailUriChan <- thumbnailUri
+	})
+
+	var mainUri, thumbnailUri string
+
+	for i := 0; i < 2; i++ {
+		select {
+		case err := <-errorChan:
+			return nil, err
+		case uri := <-mainFileUriChan:
+			mainUri = uri
+		case uri := <-thumbnailUriChan:
+			thumbnailUri = uri
+		}
 	}
+
+	entity, err := fs.Repo.InsertURI(ctx.Context(), mainUri, thumbnailUri)
+	if err != nil {
+		return nil, fmt.Errorf("database insert failed: %w", err)
+	}
+
+	return entity, nil
 }
 
 func (fs *FileService) compressImage(content []byte) ([]byte, error) {
@@ -155,26 +127,6 @@ func (fs *FileService) imageToBytes(img image.Image, fileExt string) ([]byte, er
 func (fs *FileService) decodeImage(data []byte) (image.Image, string, error) {
 	reader := bytes.NewReader(data)
 	return image.Decode(reader)
-}
-
-func (fs *FileService) CheckExist(ctx *fiber.Ctx, fileId string) (*FileEntity, error) {
-	if fileId == "" {
-		return nil, &fiber.Error{Code: 400, Message: "invalid fileId"}
-	}
-	entity, err := fs.Repo.GetRecordsById(ctx, fileId)
-	if err != nil {
-		logger.Logger.Error().Err(err).Msg(fmt.Sprintf("%+v", err))
-		if err == pgx.ErrNoRows {
-			return nil, &fiber.Error{Code: 404, Message: "records not found"}
-		}
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code == "22P02" {
-				return nil, &fiber.Error{Code: 400, Message: "invalid fileId"}
-			}
-		}
-		return nil, &fiber.Error{Code: 500, Message: "server error"}
-	}
-	return entity, nil
 }
 
 func (fs *FileService) Shutdown() {
