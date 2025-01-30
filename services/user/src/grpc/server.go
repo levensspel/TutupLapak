@@ -8,7 +8,7 @@ import (
 
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/config"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/di"
-	protoUserController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user/proto"
+	protoUserController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/grpc/controllers/user/proto"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/proto/user"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
