@@ -10,6 +10,7 @@ import (
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/database/migrations"
+	"github.com/TimDebug/TutupLapak/File/src/database/postgres"
 	"github.com/TimDebug/TutupLapak/File/src/grpc"
 	httpServer "github.com/TimDebug/TutupLapak/File/src/http"
 	log "github.com/TimDebug/TutupLapak/File/src/logger"
@@ -27,14 +28,14 @@ func main() {
 	log.Logger.Info().Msg(fmt.Sprintf("NumCPU: %d", runtime.NumCPU()))
 
 	// Initialize app configurations
-	err = config.New()
-	if err != nil {
-		log.Logger.Fatal().Err(err).Msg("failed to load the env file")
+	appConfig := config.GetConfig()
+	if appConfig == nil {
+		log.Logger.Fatal().Msg("failed to load the env file")
 	}
 	log.Logger.Info().Msg("loaded basic configuration")
 
 	// Reinitialize logger based on app config
-	log.Add(config.Config)
+	log.Add(appConfig)
 	log.Logger.Info().Msg("configured logger from configuration")
 
 	// Auto migrate
@@ -43,6 +44,12 @@ func main() {
 		log.Logger.Fatal().Err(err).Msg("unable to run migration files")
 	}
 	log.Logger.Info().Msg("successfully run migration files")
+
+	// initialize DB
+	db, err := postgres.NewPgxConnect()
+	if err != nil {
+		log.Logger.Fatal().Err(err).Msg("unable to make new DB connection")
+	}
 
 	// Handle graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -58,7 +65,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		server := httpServer.HttpServer{}
+		server := httpServer.HttpServer{DB: db}
 		server.Listen()
 	}()
 
@@ -66,7 +73,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		server := grpc.GrpcServer{}
+		server := grpc.GrpcServer{DB: db}
 		server.Listen()
 	}()
 

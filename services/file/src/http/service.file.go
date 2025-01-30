@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	c conf.Configuration = conf.Config
+	c *conf.Configuration = conf.GetConfig()
 )
 
 type FileService struct {

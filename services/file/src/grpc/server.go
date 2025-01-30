@@ -6,31 +6,30 @@ import (
 	"net"
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
-	"github.com/TimDebug/TutupLapak/File/src/database/postgres"
 	"github.com/TimDebug/TutupLapak/File/src/grpc/proto/model/file"
+	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/TimDebug/TutupLapak/File/src/repo"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 )
 
 var (
-	appConfig config.Configuration = config.Config
+	appConfig *config.Configuration = config.GetConfig()
 )
 
-type GrpcServer struct{}
+type GrpcServer struct {
+	DB *pgxpool.Pool
+}
 
 func (g *GrpcServer) Listen() error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", appConfig.GRPCPort))
-	if err != nil {
-		return err
-	}
-
-	db, err := postgres.NewPgxConnect()
+	serverConn := fmt.Sprintf("%s:%s", "0.0.0.0", appConfig.GRPCPort)
+	lis, err := net.Listen("tcp", serverConn)
 	if err != nil {
 		return err
 	}
 
 	server := grpc.NewServer()
-	fileRepo := repo.NewFileRepository(db)
+	fileRepo := repo.NewFileRepository(g.DB)
 	fileService := NewFileService(&fileRepo)
 	file.RegisterFileServiceServer(server, fileService)
 
@@ -39,5 +38,6 @@ func (g *GrpcServer) Listen() error {
 		server.GracefulStop()
 	}()
 
+	logger.Logger.Info().Msg(fmt.Sprintf("grpc server listens to: %s", serverConn))
 	return server.Serve(lis)
 }

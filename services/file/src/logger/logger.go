@@ -22,7 +22,7 @@ func Init() error {
 	return nil
 }
 
-func Add(conf config.Configuration) {
+func Add(conf *config.Configuration) {
 	zerolog.TimeFieldFormat = time.RFC3339
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	if conf.IsProduction {
