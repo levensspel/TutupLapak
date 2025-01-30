@@ -2,6 +2,9 @@ package httpServer
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof" // Import pprof untuk otomatis registrasi ke http server
 	"strings"
 	"time"
 
@@ -15,7 +18,7 @@ import (
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/monitor"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/samber/do/v2"
 )
 
@@ -38,15 +41,16 @@ func (s *HttpServer) Listen() {
 	// Setup Middlewares
 	fmt.Printf("Setup middlewares\n")
 
+	// Or extend your config for customization
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed, // 1
+	}))
+	// server profiling
+
 	// Prometheus
 	fmt.Printf("Setup prometheus\n")
 	prometheus := fiberprometheus.New("purhcase-service")
 	prometheus.RegisterAt(app, "/metrics")
-
-	// use fiber middleware monitor
-	app.Get("/metrics", monitor.New(monitor.Config{
-		Title: "Purchase-Service Metrics Page",
-	}))
 
 	app.Use(prometheus.Middleware)
 
@@ -62,6 +66,11 @@ func (s *HttpServer) Listen() {
 			c.Set("X-Internal-Latency", time.Since(start).String()) // Simpan latency di response header
 			return err
 		})
+		// Middleware PProf
+		go func() {
+			fmt.Println("Starting pprof server on localhost:6060")
+			log.Println(http.ListenAndServe("localhost:6060", nil)) // Menjalankan pprof di localhost:6060
+		}()
 	}
 
 	fmt.Printf("Inject Controllers\n")

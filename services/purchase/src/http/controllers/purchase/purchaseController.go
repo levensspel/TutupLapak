@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -314,13 +313,9 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	}
 	// todo; get SellerId berdasarkan produkId
 	if len(toGetSellersById) > 0 {
-		// Mulai pengukuran waktu
-		start := time.Now()
-
 		// kirim batch
-
 		// Create context with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
 		// Call gRPC method
@@ -339,17 +334,14 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 				BankAccountNumber: item.BankAccountNumber,
 			})
 		}
-
-		// Catat waktu selesai
-		elapsed := time.Since(start)
-		fmt.Printf("GRPC CALL >> Batch processing took %s\n", elapsed)
 	}
 	// todo; compile respond
 
 	// todo; save into repositories
 	insertedCartId, err := pc.purchaseService.SaveCart(c, *requestBody)
 	if err != nil {
-		pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, requestBody)
+		// tidak perlu logging lagi semenjak sudah ditangani oleh layar repository/service
+		// pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, requestBody)
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	cart.PurchaseId = *insertedCartId
@@ -360,9 +352,6 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	sellerIdTotalPrices = nil
 	cachedProducts = nil
 	toGetSellersById = nil
-	go func() {
-		runtime.GC()
-	}()
 	//
 	return c.Status(fiber.StatusCreated).JSON(cart)
 }

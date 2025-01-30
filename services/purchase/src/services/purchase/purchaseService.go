@@ -2,6 +2,7 @@ package purchaseService
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	functionCallerInfo "github.com/TimDebug/FitByte/src/logger/helper"
@@ -11,6 +12,8 @@ import (
 	purchaseRepository "github.com/TimDebug/FitByte/src/repositories/purchase"
 	purchaseCartRepository "github.com/TimDebug/FitByte/src/repositories/purchaseCart"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/samber/do/v2"
 )
@@ -36,20 +39,32 @@ func NewInject(i do.Injector) (*PurchaseService, error) {
 }
 
 // formely returned (*response.PurchaseResponseDTO, error)
+// Service yang menggunakan pool
 func (this PurchaseService) SaveCart(c *fiber.Ctx, entity request.CartDto) (*string, error) {
-	// buka koneksi aja
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	requestId := uuid.New()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// buka transaksi db
-	tx, err := this.db.Begin(ctx)
+	// Dapatkan koneksi dari pool (dengan menunggu jika pool penuh)
+	start := time.Now()
+
+	conn, err := this.db.Acquire(ctx)
 	if err != nil {
+		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, "Acquire Connection", fmt.Sprintf("RequestID:%s|WaitTime:%v", requestId, time.Since(start)))
 		return nil, err
 	}
-	// untuk handle panic() yang tidak tertangkap, return err pun enggak akan tertangkap oleh defer ini! Use it wisely!
+	defer conn.Release()
+
+	// Gunakan koneksi dari pool
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, "Begin Transaction", fmt.Sprintf("RequestID:%s", requestId))
+		return nil, err
+	}
 	defer tx.Rollback(ctx)
 
-	// Lanjut eksekusi query...
+	// Eksekusi query
 	senderDetail := Entity.Purchase{
 		SenderName:          entity.SenderName,
 		SenderContactDetail: entity.SenderContactDetail,
@@ -57,23 +72,25 @@ func (this PurchaseService) SaveCart(c *fiber.Ctx, entity request.CartDto) (*str
 	}
 	insertedId, err := this.purchaseRepository.InsertInto(tx, ctx, senderDetail)
 	if err != nil {
+		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, senderDetail, fmt.Sprintf("RequestID:%s", requestId))
 		tx.Rollback(ctx)
-		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, senderDetail)
-		return nil, err
-	}
-	err = this.purchaseCartRepository.InsertInto(tx, ctx, insertedId, entity.PurchasedItems)
-	if err != nil {
-		tx.Rollback(ctx)
-		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, entity.PurchasedItems)
-		return nil, err
-	}
-	// commit transaksi
-	if err := tx.Commit(ctx); err != nil {
-		tx.Rollback(ctx)
-		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart)
 		return nil, err
 	}
 
-	// return euy
+	err = this.purchaseCartRepository.InsertInto(tx, ctx, insertedId, entity.PurchasedItems)
+	if err != nil {
+		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, entity.PurchasedItems, fmt.Sprintf("RequestID:%s", requestId))
+		tx.Rollback(ctx)
+		return nil, err
+	}
+
+	// Commit transaksi jika sukses
+	if err := tx.Commit(ctx); err != nil {
+		this.logger.Error(err.Error(), functionCallerInfo.PurchaserServiceSaveCart, fmt.Sprintf("RequestID:%s", requestId))
+		tx.Rollback(ctx)
+		return nil, err
+	}
+
+	// Return inserted ID
 	return &insertedId, nil
 }

@@ -1,4 +1,5 @@
 scrape_configs:
   - job_name: "purhcase-service"
+    scrape_interval: 60s  # Frekuensi scrape setiap 60 detik / 1 menit
     static_configs:
       - targets: ["tutuplapak-purchase-service:8080"]
