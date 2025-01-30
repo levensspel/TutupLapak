@@ -3,48 +3,34 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewPgxConnect() (*pgxpool.Pool, error) {
-	DbString := config.GetDBConnection()
-	fmt.Printf("Connection string: %s\n", DbString)
-	tempConn, err := pgx.Connect(context.Background(), DbString)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer tempConn.Close(context.Background())
+	DbString := config.GetConfig().DBConnection
+	fmt.Printf("Database connection string: %s\n", DbString)
 
+	// Create connection pool
+	db, err := pgxpool.New(context.Background(), DbString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create connection pool: %w", err)
+	}
+
+	// Get max_connections (optional)
 	var maxConStr string
-
-	row := tempConn.QueryRow(context.Background(), "SHOW max_connections")
-	err = row.Scan(&maxConStr)
-
+	err = db.QueryRow(context.Background(), "SHOW max_connections").Scan(&maxConStr)
 	if err != nil {
-		panic(err)
-	}
-
-	maxConn, err := strconv.Atoi(maxConStr)
-	if err != nil {
-		panic(err)
-	}
-
-	maxOpenConnection := int(float64(maxConn) * 0.8)
-
-	pgxConfig, err := pgxpool.ParseConfig(DbString)
-	if err != nil {
-		panic(err)
-	}
-
-	pgxConfig.MaxConns = int32(maxOpenConnection)
-
-	db, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
-	if err != nil {
-		panic(err)
+		log.Printf("Warning: Failed to retrieve max_connections: %v", err)
+	} else {
+		maxConn, err := strconv.Atoi(maxConStr)
+		if err == nil {
+			db.Config().MaxConns = int32(float64(maxConn) * 0.8)
+			fmt.Printf("Setting max connections to: %d\n", db.Config().MaxConns)
+		}
 	}
 
 	return db, nil

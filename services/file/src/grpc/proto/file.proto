@@ -1,0 +1,19 @@
+syntax="proto3";
+
+option go_package="model/file";
+
+package file;
+
+message FileRequest {
+    string fileId = 1;
+}
+
+message FileResponse {
+    string fileId = 1;
+    string fileUri = 2;
+    string thumbnailUri = 3;
+}
+
+service FileService {
+    rpc CheckExist(FileRequest) returns (FileResponse);
+}
