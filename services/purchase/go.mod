@@ -89,4 +89,5 @@ require (
 	golang.org/x/tools v0.29.0 // indirect
 	google.golang.org/grpc v1.70.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/gorm v1.25.12
 )
