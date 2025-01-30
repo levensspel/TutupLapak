@@ -2,6 +2,7 @@ package di
 
 import (
 	authJwt "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/auth/jwt"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/cache"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/database/postgre"
 	userController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user"
 	protoUserController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user/proto"
@@ -28,6 +29,10 @@ func init() {
 	//? Setup Auth
 	//? JWT Service
 	do.Provide[authJwt.JwtServiceInterface](Injector, authJwt.NewJwtServiceInject)
+
+	//? Setup Redis Client
+	//? Redis Client
+	do.Provide[cache.RedisCacheClient](Injector, cache.NewRedisCacheClientInject)
 
 	//? Setup Repositories
 	//? User Repository

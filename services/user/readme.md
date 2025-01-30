@@ -109,3 +109,53 @@ go get github.com/grpc-ecosystem/go-grpc-prometheus
 ### NOTE: 
 it is important to put the build inside of the .build folder
 to ensure the gitignore caught up with the files.
+
+# Redis
+## Setup
+#### 1. Ensure you have Redis installed or you can use the Redis with container.
+
+
+Example to run the Redis using existing Docker Compose  in this repository:
+```
+cd ./middleware/cacheserver
+docker compose up -d 
+```
+
+#### 2. Check if Redis container run properly
+Enter the Redis container:
+```
+docker compose exec -it redis bash
+```
+Run Redis CLI inside the redis:
+```
+redis-cli
+```
+Ping the Redis server to see whether it answers "PONG"!
+```
+ping
+```
+
+#### 3. Ensure the Redis environtment variables are all set properly in `.env` file.
+
+#### 4. Run the app like usual
+```bash
+go run main.go
+```
+
+## Test The Redis
+After running the app and testing related API endpoints, check whether the Redis really stores the cache data.
+Enter Redis CLI:
+```
+docker compose exec -it redis bash
+redis-cli
+```
+Do any Redis syntax you want. 
+Example to get value from key:
+```
+GET key_name
+```
+
+## Add Interfaces
+1. Open `./services/user/src/cache/redis`
+2. Add the new interface to `CacheClientInterface`
+3. Add the function implementation to it and ensure the functon exposed to the consumer

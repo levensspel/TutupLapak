@@ -4,6 +4,7 @@ import (
 	"context"
 
 	authJwt "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/auth/jwt"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/cache"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/exceptions"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/helper"
 	functionCallerInfo "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/helper"
@@ -38,6 +39,7 @@ type UserServiceInterface interface {
 type userService struct {
 	UserRepository userRepository.UserRepositoryInterface
 	Db             *pgxpool.Pool
+	Cache          cache.RedisCacheClient
 	jwtService     authJwt.JwtServiceInterface
 	fileService    fileService.FileServiceInterface
 	Logger         loggerZap.LoggerInterface
@@ -46,6 +48,7 @@ type userService struct {
 func NewUserService(
 	userRepo userRepository.UserRepositoryInterface,
 	db *pgxpool.Pool,
+	cache cache.RedisCacheClient,
 	jwtService authJwt.JwtServiceInterface,
 	fileService fileService.FileServiceInterface,
 	logger loggerZap.LoggerInterface,
@@ -53,6 +56,7 @@ func NewUserService(
 	return &userService{
 		UserRepository: userRepo,
 		Db:             db,
+		Cache:          cache,
 		jwtService:     jwtService,
 		fileService:    fileService,
 		Logger:         logger,
@@ -61,12 +65,13 @@ func NewUserService(
 
 func NewUserServiceInject(i do.Injector) (UserServiceInterface, error) {
 	_db := do.MustInvoke[*pgxpool.Pool](i)
+	_cache := do.MustInvoke[cache.RedisCacheClient](i)
 	_userRepo := do.MustInvoke[userRepository.UserRepositoryInterface](i)
 	_jwtService := do.MustInvoke[authJwt.JwtServiceInterface](i)
 	_fileService := do.MustInvoke[fileService.FileServiceInterface](i)
 	_logger := do.MustInvoke[loggerZap.LoggerInterface](i)
 
-	return NewUserService(_userRepo, _db, _jwtService, _fileService, _logger), nil
+	return NewUserService(_userRepo, _db, _cache, _jwtService, _fileService, _logger), nil
 }
 
 func (us *userService) RegisterByEmail(ctx context.Context, input request.AuthByEmailRequest) (response.AuthResponse, error) {
@@ -96,6 +101,10 @@ func (us *userService) RegisterByEmail(ctx context.Context, input request.AuthBy
 		us.Logger.Error(err.Error(), functionCallerInfo.UserServiceRegisterByEmail)
 		return response.AuthResponse{}, exceptions.ErrServer(err.Error())
 	}
+
+	us.Cache.SetUserProfile(ctx, userId, &response.UserResponse{
+		Email: input.Email,
+	})
 
 	return response.AuthResponse{
 		Email: input.Email,
@@ -131,6 +140,10 @@ func (us *userService) RegisterByPhone(ctx context.Context, input request.AuthBy
 		us.Logger.Error(err.Error(), functionCallerInfo.UserServiceRegisterByPhone)
 		return response.AuthResponse{}, exceptions.ErrServer(err.Error())
 	}
+
+	us.Cache.SetUserProfile(ctx, userId, &response.UserResponse{
+		Phone: input.Phone,
+	})
 
 	return response.AuthResponse{
 		Email: "",
@@ -169,6 +182,11 @@ func (us *userService) LoginByEmail(ctx context.Context, input request.AuthByEma
 		return response.AuthResponse{}, exceptions.ErrServer(err.Error())
 	}
 
+	us.Cache.SetUserProfile(ctx, auth.UserId, &response.UserResponse{
+		Email: input.Email,
+		Phone: auth.Phone,
+	})
+
 	return response.AuthResponse{
 		Email: input.Email,
 		Phone: auth.Phone,
@@ -206,6 +224,11 @@ func (us *userService) LoginByPhone(ctx context.Context, input request.AuthByPho
 		return response.AuthResponse{}, exceptions.ErrServer(err.Error())
 	}
 
+	us.Cache.SetUserProfile(ctx, auth.UserId, &response.UserResponse{
+		Email: auth.Email,
+		Phone: input.Phone,
+	})
+
 	return response.AuthResponse{
 		Email: auth.Email,
 		Phone: input.Phone,
@@ -235,6 +258,8 @@ func (us *userService) LinkEmail(ctx context.Context, input request.LinkEmailReq
 	response := helper.ConvertUserToResponse(user)
 	response.Email = input.Email
 
+	us.Cache.SetUserProfile(ctx, userId, &response)
+
 	return response, nil
 }
 
@@ -260,10 +285,25 @@ func (us *userService) LinkPhone(ctx context.Context, input request.LinkPhoneReq
 	response := helper.ConvertUserToResponse(user)
 	response.Phone = input.Phone
 
+	us.Cache.SetUserProfile(ctx, userId, &response)
+
 	return response, nil
 }
 
 func (us *userService) GetUserProfile(ctx context.Context, userId string) (response.UserResponse, error) {
+	if cachedUser, ok := us.Cache.GetUserProfile(ctx, userId); ok {
+		return response.UserResponse{
+			Email:             cachedUser.Email,
+			Phone:             cachedUser.Phone,
+			FileId:            cachedUser.FileId,
+			FileUri:           cachedUser.FileUri,
+			FileThumbnailUri:  cachedUser.FileThumbnailUri,
+			BankAccountName:   cachedUser.BankAccountName,
+			BankAccountHolder: cachedUser.BankAccountHolder,
+			BankAccountNumber: cachedUser.BankAccountNumber,
+		}, nil
+	}
+
 	user, err := us.UserRepository.GetUserProfile(context.Background(), us.Db, userId)
 	if err != nil {
 		us.Logger.Error(err.Error(), functionCallerInfo.UserRepositoryGetUserProfile, err)
@@ -278,6 +318,8 @@ func (us *userService) GetUserProfile(ctx context.Context, userId string) (respo
 	}
 
 	response := helper.ConvertUserToResponse(user)
+
+	us.Cache.SetUserProfile(ctx, userId, &response)
 
 	return response, nil
 }
@@ -323,6 +365,8 @@ func (us *userService) UpdateUserProfile(ctx context.Context, input request.Upda
 	}
 
 	response := helper.ConvertUserToResponse(user)
+
+	us.Cache.SetUserProfile(ctx, userId, &response)
 
 	return response, nil
 }
