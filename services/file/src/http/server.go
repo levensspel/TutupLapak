@@ -28,7 +28,7 @@ func (s *HttpServer) Listen() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "*",
 		AllowCredentials: false,
-		AllowMethods:     "GET,POST",
+		AllowMethods:     "POST",
 	}))
 	app.Use(logger.New(logger.Config{
 		Done:          localLog.ZerologWriter,

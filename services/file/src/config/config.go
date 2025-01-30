@@ -26,11 +26,15 @@ type Configuration struct {
 var (
 	instance *Configuration
 	once     sync.Once
+	errInit  error
 )
 
 func GetConfig() *Configuration {
 	once.Do(func() {
-		godotenv.Load()
+		errInit = godotenv.Load()
+		if errInit != nil {
+			return
+		}
 		instance = &Configuration{
 			Port:                getPort(),
 			GRPCPort:            getEnv("GRPC_PORT", "5000"),
