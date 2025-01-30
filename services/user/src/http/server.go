@@ -10,9 +10,11 @@ import (
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/helper"
 	swaggerRoutes "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/apiDocumentation"
 	userController "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/controllers/user"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/middlewares"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/routes"
 	userroutes "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/routes/user"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
@@ -36,9 +38,12 @@ func (s *HttpServer) Listen() {
 				Message: err.Error(),
 			})
 		},
+		JSONEncoder: sonic.Marshal,
+		JSONDecoder: sonic.Unmarshal,
 	})
 
 	app.Use(recover.New())
+	app.Use(middlewares.CacheMiddleware())
 
 	if strings.ToUpper(config.MODE) == config.MODE_DEBUG {
 		// terminal logger

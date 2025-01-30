@@ -20,7 +20,7 @@ type UserRepositoryInterface interface {
 	UpdateUserProfile(ctx context.Context, pool *pgxpool.Pool, input repository.UpdateUser, userId string) (*repository.User, error)
 
 	GetUserProfiles(ctx context.Context, pool *pgxpool.Pool, userId []string) (user []response.UserResponse, err error)
-	GetUserProfilesWithId(ctx context.Context, pool *pgxpool.Pool, userId []string) (user []response.UserWithIdResponse, err error)
+	GetUserProfilesWithId(ctx context.Context, pool *pgxpool.Pool, userIds []string) (user []response.UserWithIdResponse, err error)
 }
 
 type UserRepository struct {

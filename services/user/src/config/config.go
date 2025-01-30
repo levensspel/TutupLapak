@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 var FILE_SERVICE_BASE_URL string
 var MODE string
@@ -40,6 +43,27 @@ func GetGRPCPort() string {
 
 func GetMetricGRPCPort() string {
 	return getEnv("METRIC_GRPC_PORT", "9090")
+}
+
+func GetRedisHost() string {
+	return getEnv("REDIS_HOST", "127.0.0.1")
+}
+
+func GetRedisPort() string {
+	return getEnv("REDIS_PORT", "6379")
+}
+
+func GetRedisPassword() string {
+	return getEnv("REDIS_PASSWORD", "")
+}
+
+func GetRedisDbCount() int {
+	count, err := strconv.Atoi(getEnv("REDIS_DB_COUNT", "0"))
+	if err != nil {
+		return 0
+	}
+
+	return count
 }
 
 func getFileServiceBaseURL() string {
