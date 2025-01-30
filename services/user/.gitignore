@@ -2,6 +2,8 @@
 storage/*
 public/*
 logs/*
+.build/
 .build/*
+build/
 build/*
 .uploads/*

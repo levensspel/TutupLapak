@@ -1,10 +1,11 @@
 package appController
 
+// goodluck reading my code -ad1ee
+
 import (
 	"context"
 	"fmt"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -17,18 +18,20 @@ import (
 	"github.com/TimDebug/FitByte/src/model/dtos/request"
 	"github.com/TimDebug/FitByte/src/model/dtos/response"
 	"github.com/TimDebug/FitByte/src/services/proto/user"
+	purchaseService "github.com/TimDebug/FitByte/src/services/purchase"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/samber/do/v2"
 )
 
 type PurchaseController struct {
-	logger     loggerZap.LoggerInterface
-	validator  helper.XValidator
-	grpcClient *purchaseGrpc.ProtoUserController
+	logger          loggerZap.LoggerInterface
+	validator       helper.XValidator
+	grpcClient      *purchaseGrpc.ProtoUserController
+	purchaseService *purchaseService.PurchaseService
 }
 
-func NewPurchaseController(logger loggerZap.LoggerInterface, grpcClient *purchaseGrpc.ProtoUserController) IPurchaseController {
+func NewPurchaseController(logger loggerZap.LoggerInterface, grpcClient *purchaseGrpc.ProtoUserController, purchaseService *purchaseService.PurchaseService) IPurchaseController {
 	xValidator := helper.XValidator{Validator: validator.New()}
 	xValidator.Validator.RegisterValidation("sender_email_or_phone", func(fl validator.FieldLevel) bool {
 		contactType := fl.Parent().FieldByName("SenderContactType").String()
@@ -47,13 +50,14 @@ func NewPurchaseController(logger loggerZap.LoggerInterface, grpcClient *purchas
 		}
 	})
 
-	return &PurchaseController{logger: logger, validator: xValidator, grpcClient: grpcClient}
+	return &PurchaseController{logger: logger, validator: xValidator, grpcClient: grpcClient, purchaseService: purchaseService}
 }
 
 func NewPurchaseControllerInject(i do.Injector) (IPurchaseController, error) {
 	_logger := do.MustInvoke[loggerZap.LoggerInterface](i)
 	_grpcClient := do.MustInvoke[*purchaseGrpc.ProtoUserController](i)
-	return NewPurchaseController(_logger, _grpcClient), nil
+	_purchaseService := do.MustInvoke[*purchaseService.PurchaseService](i)
+	return NewPurchaseController(_logger, _grpcClient, _purchaseService), nil
 }
 
 // Purchase godoc
@@ -309,14 +313,9 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	}
 	// todo; get SellerId berdasarkan produkId
 	if len(toGetSellersById) > 0 {
-		fmt.Printf("MULAI GET_SELLER\n")
-		// Mulai pengukuran waktu
-		start := time.Now()
-
 		// kirim batch
-
 		// Create context with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
 		// Call gRPC method
@@ -335,12 +334,17 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 				BankAccountNumber: item.BankAccountNumber,
 			})
 		}
-
-		// Catat waktu selesai
-		elapsed := time.Since(start)
-		fmt.Printf("GRPC CALL >> Batch processing took %s\n", elapsed)
 	}
 	// todo; compile respond
+
+	// todo; save into repositories
+	insertedCartId, err := pc.purchaseService.SaveCart(c, *requestBody)
+	if err != nil {
+		// tidak perlu logging lagi semenjak sudah ditangani oleh layar repository/service
+		// pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, requestBody)
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	cart.PurchaseId = *insertedCartId
 
 	// todo; free temporaries
 	mapSellerId = nil
@@ -348,9 +352,6 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	sellerIdTotalPrices = nil
 	cachedProducts = nil
 	toGetSellersById = nil
-	go func() {
-		runtime.GC()
-	}()
 	//
 	return c.Status(fiber.StatusCreated).JSON(cart)
 }
