@@ -2,8 +2,6 @@ package httpServer
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 	_ "net/http/pprof" // Import pprof untuk otomatis registrasi ke http server
 	"strings"
 	"time"
@@ -67,10 +65,10 @@ func (s *HttpServer) Listen() {
 			return err
 		})
 		// Middleware PProf
-		go func() {
-			fmt.Println("Starting pprof server on localhost:6060")
-			log.Println(http.ListenAndServe("localhost:6060", nil)) // Menjalankan pprof di localhost:6060
-		}()
+		// go func() {
+		// 	fmt.Println("Starting pprof")
+		// 	app.Use(pprof.New())
+		// }()
 	}
 
 	fmt.Printf("Inject Controllers\n")

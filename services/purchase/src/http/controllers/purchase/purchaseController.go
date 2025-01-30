@@ -341,7 +341,7 @@ func (pc *PurchaseController) Cart(c *fiber.Ctx) error {
 	insertedCartId, err := pc.purchaseService.SaveCart(c, *requestBody)
 	if err != nil {
 		// tidak perlu logging lagi semenjak sudah ditangani oleh layar repository/service
-		// pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, requestBody)
+		pc.logger.Error(err.Error(), functionCallerInfo.PurhcaseControllerPutCart, requestBody)
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	cart.PurchaseId = *insertedCartId

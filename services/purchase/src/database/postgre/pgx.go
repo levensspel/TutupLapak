@@ -34,7 +34,7 @@ func NewPgxConnectInject(i do.Injector) (*pgxpool.Pool, error) {
 		panic(err)
 	}
 
-	maxOpenConnection := int(float64(maxConn) * 0.8)
+	maxOpenConnection := int(float64(maxConn) * 0.8 / 3)
 
 	pgxConfig, err := pgxpool.ParseConfig(DbString)
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/middlewares"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/routes"
 	userroutes "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/http/routes/user"
+	loggerZap "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/zap"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
@@ -30,9 +31,11 @@ type HttpServer struct{}
 
 func (s *HttpServer) Listen() {
 	fmt.Printf("New Fiber\n")
+	_logger := do.MustInvoke[loggerZap.LoggerInterface](di.Injector)
 	app := fiber.New(fiber.Config{
 		ServerHeader: helper.X_AUTHOR_HEADER_VALUE,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			_logger.Error(err.Error(), "Global HandlerError")
 			return c.Status(fiber.StatusBadRequest).JSON(response.GlobalErrorHandlerResp{
 				Success: false,
 				Message: err.Error(),
