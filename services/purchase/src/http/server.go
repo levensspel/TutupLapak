@@ -2,7 +2,7 @@ package httpServer
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/TimDebug/FitByte/src/config"
@@ -15,10 +15,7 @@ import (
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cache"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
-	"github.com/gofiber/fiber/v2/utils"
 	"github.com/samber/do/v2"
 )
 
@@ -40,10 +37,6 @@ func (s *HttpServer) Listen() {
 
 	// Setup Middlewares
 	fmt.Printf("Setup middlewares\n")
-	app.Use(logger.New(logger.Config{
-		Format:     "${time} ${status} - ${method} ${path} - Internal Latency: ${latency}\n",
-		TimeFormat: "2006-01-02 15:04:05",
-	}))
 
 	// Prometheus
 	fmt.Printf("Setup prometheus\n")
@@ -58,17 +51,18 @@ func (s *HttpServer) Listen() {
 	app.Use(prometheus.Middleware)
 
 	// app.Use(middlewares.RequestLogger)
-	app.Use(cache.New(cache.Config{
-		ExpirationGenerator: func(c *fiber.Ctx, cfg *cache.Config) time.Duration {
-			newCacheTime, _ := strconv.Atoi(c.GetRespHeader("Cache-Time", "600"))
-			return time.Second * time.Duration(newCacheTime)
-		},
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return utils.CopyString(c.Path())
-		},
-		CacheControl: true,
-		Expiration:   10 * time.Second,
-	}))
+	if strings.ToUpper(config.GetMode()) == config.MODE_DEBUG {
+		// app.Use(logger.New(logger.Config{
+		// 	Format:     "${time} ${status} - ${method} ${path} - Internal Latency: ${latency}\n",
+		// 	TimeFormat: "2006-01-02 15:04:05",
+		// }))
+		app.Use(func(c *fiber.Ctx) error {
+			start := time.Now()
+			err := c.Next()                                         // Lanjutkan ke handler berikutnya
+			c.Set("X-Internal-Latency", time.Since(start).String()) // Simpan latency di response header
+			return err
+		})
+	}
 
 	fmt.Printf("Inject Controllers\n")
 	pc := do.MustInvoke[appController.IPurchaseController](di.Injector)
