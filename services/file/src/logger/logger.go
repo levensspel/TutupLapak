@@ -32,11 +32,16 @@ func Add(conf *config.Configuration) {
 }
 
 func initMultiWriter() error {
+	if _, err := os.Stat("log"); os.IsNotExist(err) {
+		err := os.Mkdir("log", os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
 	LogFile, err := os.OpenFile("log/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
-	// multi := io.MultiWriter(LogFile, os.Stdout)
 	multi := zerolog.MultiLevelWriter(LogFile, os.Stdout)
 	Logger = zerolog.New(multi).With().Timestamp().Logger()
 	return nil

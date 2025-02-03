@@ -89,7 +89,7 @@ func getAutoMigrate() bool {
 }
 
 func getLocationMigrate() string {
-	return getEnv("MIGRATION_FILE_PATH", "file://src/database/migrations")
+	return "file://" + getEnv("MIGRATION_FILE_PATH", "src/database/migrations")
 }
 
 func isProduction() bool {
