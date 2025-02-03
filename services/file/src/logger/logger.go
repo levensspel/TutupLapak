@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -11,24 +12,24 @@ import (
 var (
 	LogFile *os.File
 	Logger  zerolog.Logger
+	conf    *config.Configuration = config.GetConfig()
 )
 
 func Init() error {
+	if conf == nil {
+		return fmt.Errorf("unable to open the env file")
+	}
 	err := initMultiWriter()
 	if err != nil {
 		return err
 	}
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	return nil
-}
-
-func Add(conf *config.Configuration) {
 	zerolog.TimeFieldFormat = time.RFC3339
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	if conf.IsProduction {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	}
+	return nil
 }
 
 func initMultiWriter() error {
@@ -42,7 +43,11 @@ func initMultiWriter() error {
 	if err != nil {
 		return err
 	}
+
 	multi := zerolog.MultiLevelWriter(LogFile, os.Stdout)
+	if conf.IsProduction {
+		multi = zerolog.MultiLevelWriter(LogFile)
+	}
 	Logger = zerolog.New(multi).With().Timestamp().Logger()
 	return nil
 }

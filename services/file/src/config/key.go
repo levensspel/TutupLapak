@@ -1,5 +1,6 @@
 package config
 
-type RequestKeyType struct{}
+type RequestKeyType string
 
-var RequestKey = RequestKeyType{}
+var RequestKey RequestKeyType = "request_id"
+var ElapsedKey RequestKeyType = "elapsed_time"

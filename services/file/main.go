@@ -8,7 +8,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/database/migrations"
 	"github.com/TimDebug/TutupLapak/File/src/database/postgres"
 	"github.com/TimDebug/TutupLapak/File/src/grpc"
@@ -24,19 +23,9 @@ func main() {
 	if err != nil {
 		log.Logger.Fatal().Err(err).Msg("unable to init basic logger")
 	}
+	log.Logger.Info().Msg("loaded basic configuration")
 	log.Logger.Info().Msg("configured basic logger")
 	log.Logger.Info().Msg(fmt.Sprintf("NumCPU: %d", runtime.NumCPU()))
-
-	// Initialize app configurations
-	appConfig := config.GetConfig()
-	if appConfig == nil {
-		log.Logger.Fatal().Msg("failed to load the env file")
-	}
-	log.Logger.Info().Msg("loaded basic configuration")
-
-	// Reinitialize logger based on app config
-	log.Add(appConfig)
-	log.Logger.Info().Msg("configured logger from configuration")
 
 	// Auto migrate
 	err = migrations.Migrate()
