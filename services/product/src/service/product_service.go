@@ -58,7 +58,7 @@ func (ps *ProductService) Create(ctx context.Context, payload request.ProductCre
 		Sku:       *payload.Sku,
 		FileId:    *payload.FileId,
 		CreatedAt: time,
-		UpdateAt:  time,
+		UpdatedAt: time,
 	}
 
 	id, err := ps.ProductRepo.Create(ctx, ps.DB, product)
@@ -78,6 +78,97 @@ func (ps *ProductService) Create(ctx context.Context, payload request.ProductCre
 		FileUri:          "",
 		FileThumbnailUri: "",
 		CreatedAt:        product.CreatedAt,
-		UpdatedAt:        product.UpdateAt,
+		UpdatedAt:        product.UpdatedAt,
 	}, nil
+}
+
+func (ps *ProductService) DeletedById(ctx context.Context, productId string, userId string) error {
+	if productId == "" {
+		return exceptions.NewNotFoundError(productId + " is not found")
+	}
+
+	err := ps.ProductRepo.DeleteById(ctx, ps.DB, productId, userId)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ps *ProductService) UpdateById(ctx context.Context, payload request.ProductUpdate) (response.ProductCreate, error) {
+	err := ps.Validation.Struct(payload)
+	if err != nil {
+		return response.ProductCreate{}, exceptions.NewBadRequestError(err.Error())
+	}
+
+	// TODO FIND FILEID
+
+	time := time.Now()
+
+	product := entity.Product{
+		Id:        payload.Id,
+		UserId:    payload.UserId,
+		Name:      *payload.Name,
+		Category:  *payload.Category,
+		Qty:       *payload.Qty,
+		Price:     *payload.Price,
+		Sku:       *payload.Sku,
+		FileId:    *payload.FileId,
+		UpdatedAt: time,
+	}
+
+	createdAt, err := ps.ProductRepo.UpdateById(ctx, ps.DB, product)
+	if err != nil {
+		return response.ProductCreate{}, err
+	}
+	return response.ProductCreate{
+		ProductId:        payload.Id,
+		Name:             product.Name,
+		Qty:              product.Qty,
+		Price:            product.Price,
+		Sku:              product.Sku,
+		FileId:           product.FileId,
+		Category:         product.Category,
+		FileUri:          "",
+		FileThumbnailUri: "",
+		CreatedAt:        createdAt,
+		UpdatedAt:        product.UpdatedAt,
+	}, nil
+}
+
+func (ps *ProductService) GetAll(ctx context.Context, filter request.ProductFilter) ([]response.ProductCreate, error) {
+	// err := ps.Validation.Struct(filter)
+
+	// if err != nil {
+	// 	return nil, exceptions.NewBadRequestError(err.Error())
+	// }
+
+	products, err := ps.ProductRepo.GetAll(ctx, ps.DB, filter)
+
+	// TODO GET FILE SERVICE
+
+	if err != nil {
+		return nil, exceptions.NewBadRequestError(err.Error())
+	}
+
+	var productResponses []response.ProductCreate
+
+	for _, product := range products {
+		productResponse := response.ProductCreate{
+			ProductId:        product.Id,
+			Name:             product.Name,
+			Category:         product.Category,
+			Qty:              product.Qty,
+			Price:            product.Price,
+			Sku:              product.Sku,
+			FileId:           product.FileId,
+			FileThumbnailUri: "",
+			FileUri:          "",
+			CreatedAt:        product.CreatedAt,
+			UpdatedAt:        product.UpdatedAt,
+		}
+		productResponses = append(productResponses, productResponse)
+	}
+
+	return productResponses, nil
 }

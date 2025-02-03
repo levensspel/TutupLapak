@@ -1,7 +1,7 @@
 -- Membuat tabel products
 CREATE TABLE IF NOT EXISTS products (
-	id UUID NOT NULL DEFAULT gen_random_uuid(),
-	user_id UUID NOT NULL,
+	id VARCHAR(255) NOT NULL DEFAULT gen_random_uuid(),
+	user_id VARCHAR(255) NOT NULL,
 	name varchar(50) NOT NULL,
 	category product_categories NOT NULL,
 	qty INTEGER NOT NULL,

@@ -6,7 +6,7 @@ type UnauthorizedError struct {
 }
 
 func NewUnauthorizedError(message string) *UnauthorizedError {
-	return &UnauthorizedError{Message: message, StatusCode: 409}
+	return &UnauthorizedError{Message: message, StatusCode: 401}
 }
 
 func (e *UnauthorizedError) Error() string {

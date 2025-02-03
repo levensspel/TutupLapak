@@ -12,5 +12,5 @@ type Product struct {
 	Sku       string
 	FileId    string
 	CreatedAt time.Time
-	UpdateAt  time.Time
+	UpdatedAt time.Time
 }
