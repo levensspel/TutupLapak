@@ -92,7 +92,7 @@ func (d RedisCacheClient) SetUserProfile(ctx context.Context, userId string, use
 		"bankAccountNumber": user.BankAccountNumber,
 	}
 
-	return d.setAsMap(ctx, userId, userMap)
+	return d.setAsMap(ctx, "user:"+userId, userMap)
 }
 
 func (d RedisCacheClient) GetUserProfile(ctx context.Context, userId string) (*response.UserResponse, bool) {
@@ -100,7 +100,7 @@ func (d RedisCacheClient) GetUserProfile(ctx context.Context, userId string) (*r
 		recover()
 	}()
 
-	result, ok := d.getAsMap(ctx, userId)
+	result, ok := d.getAsMap(ctx, "user:"+userId)
 	if !ok {
 		return &response.UserResponse{}, false
 	}
@@ -122,7 +122,7 @@ func (d RedisCacheClient) GetFile(ctx context.Context, fileId string) (*service.
 		recover()
 	}()
 
-	result, ok := d.getAsMap(ctx, fileId)
+	result, ok := d.getAsMap(ctx, "file:"+fileId)
 	if !ok {
 		return &service.File{}, false
 	}

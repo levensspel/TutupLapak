@@ -68,7 +68,7 @@ func GetRedisDbCount() int {
 
 // Percentage use of max database connections.
 // Default to 0.8 (80%).
-// Range: 0.0 < x <= 10.
+// Range: 0.0 < x <= 1.0
 func GetDbMaxConnPercentage() float64 {
 	percentage, err := strconv.ParseFloat(getEnv("DB_MAX_CONN_PERCENTAGE", "0.8"), 64)
 	if err != nil || percentage <= 0.0 || percentage > 1.0 {
