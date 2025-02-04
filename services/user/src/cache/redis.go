@@ -9,6 +9,7 @@ import (
 
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/config"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/service"
 	"github.com/samber/do/v2"
 
 	"github.com/redis/go-redis/v9"
@@ -34,6 +35,7 @@ type CacheClientInterface interface {
 	// Exposed Interfaces to Services
 	SetUserProfile(ctx context.Context, userId string, user *response.UserResponse) error
 	GetUserProfile(ctx context.Context, userId string) (*response.UserResponse, bool)
+	GetFile(ctx context.Context, fileId string) (*service.File, bool)
 }
 
 type RedisCacheClient struct {
@@ -90,7 +92,7 @@ func (d RedisCacheClient) SetUserProfile(ctx context.Context, userId string, use
 		"bankAccountNumber": user.BankAccountNumber,
 	}
 
-	return d.setAsMap(ctx, userId, userMap)
+	return d.setAsMap(ctx, "user:"+userId, userMap)
 }
 
 func (d RedisCacheClient) GetUserProfile(ctx context.Context, userId string) (*response.UserResponse, bool) {
@@ -98,7 +100,7 @@ func (d RedisCacheClient) GetUserProfile(ctx context.Context, userId string) (*r
 		recover()
 	}()
 
-	result, ok := d.getAsMap(ctx, userId)
+	result, ok := d.getAsMap(ctx, "user:"+userId)
 	if !ok {
 		return &response.UserResponse{}, false
 	}
@@ -112,5 +114,21 @@ func (d RedisCacheClient) GetUserProfile(ctx context.Context, userId string) (*r
 		BankAccountName:   result["bankAccountName"],
 		BankAccountHolder: result["bankAccountHolder"],
 		BankAccountNumber: result["bankAccountNumber"],
+	}, true
+}
+
+func (d RedisCacheClient) GetFile(ctx context.Context, fileId string) (*service.File, bool) {
+	defer func() {
+		recover()
+	}()
+
+	result, ok := d.getAsMap(ctx, "file:"+fileId)
+	if !ok {
+		return &service.File{}, false
+	}
+
+	return &service.File{
+		FileUri:          result["fileUri"],
+		FileThumbnailUri: result["fileThumbnailUri"],
 	}, true
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/repository"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/request"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/service"
 	userRepository "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/repositories/user"
 	fileService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/external/file"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/user/validator"
@@ -337,10 +338,16 @@ func (us *userService) UpdateUserProfile(ctx context.Context, input request.Upda
 	}
 
 	if input.FileId != "" {
-		file, ok := us.fileService.GetFile(ctx, input.FileId)
+		var file *service.File
+
+		file, ok := us.Cache.GetFile(ctx, input.FileId)
 		if !ok {
-			// *Logging is done in the fileService implementation
-			return response.UserResponse{}, exceptions.NewErrorResponse(fiber.StatusBadRequest, "Bad request")
+			*file, ok = us.fileService.GetFile(ctx, input.FileId)
+
+			if !ok {
+				// *Logging is done in the fileService implementation
+				return response.UserResponse{}, exceptions.NewErrorResponse(fiber.StatusBadRequest, "Bad request")
+			}
 		}
 
 		updateUser.FileId = &input.FileId
