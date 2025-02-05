@@ -38,7 +38,6 @@ func NewFileService(repo repo.FileRepository, storageClient StorageClient) FileS
 
 func (fs *FileService) UploadFile(
 	ctx *fiber.Ctx,
-	originalFilename string,
 	targetFilename string,
 	file multipart.File,
 	mimetype string,
@@ -48,53 +47,25 @@ func (fs *FileService) UploadFile(
 		return nil, &fiber.Error{Code: 500, Message: "unable to read file content"}
 	}
 
-	mainFileUriChan := make(chan string, 1)
-	thumbnailUriChan := make(chan string, 1)
-	errorChan := make(chan error, 2)
+	thumbFileName := fmt.Sprintf("thumbnail-%s", targetFilename)
 
 	fs.wp.Submit(func() {
-		mainUri, err := fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
-		if err != nil {
-			errorChan <- fmt.Errorf("main file upload failed: %w", err)
-			return
-		}
-		mainFileUriChan <- mainUri
+		fs.StorageClient.PutFile(ctx.Context(), targetFilename, mimetype, fileContent, true)
 	})
 
 	fs.wp.Submit(func() {
 		fileBuf, err := fs.compressImage(fileContent)
-		if err != nil {
-			errorChan <- fmt.Errorf("thumbnail compression failed: %w", err)
-			return
+		if err == nil {
+			fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
 		}
-
-		thumbFileName := fmt.Sprintf("thumbnail-%s", targetFilename)
-		thumbnailUri, err := fs.StorageClient.PutFile(ctx.Context(), thumbFileName, mimetype, fileBuf, true)
-		if err != nil {
-			errorChan <- fmt.Errorf("thumbnail upload failed: %w", err)
-			return
-		}
-		thumbnailUriChan <- thumbnailUri
 	})
 
-	var mainUri, thumbnailUri string
-
-	for i := 0; i < 2; i++ {
-		select {
-		case err := <-errorChan:
-			return nil, err
-		case uri := <-mainFileUriChan:
-			mainUri = uri
-		case uri := <-thumbnailUriChan:
-			thumbnailUri = uri
-		}
-	}
-
+	mainUri := fs.StorageClient.GetUrl(targetFilename)
+	thumbnailUri := fs.StorageClient.GetUrl(thumbFileName)
 	entity, err := fs.Repo.InsertURI(ctx.Context(), mainUri, thumbnailUri)
 	if err != nil {
-		return nil, fmt.Errorf("database insert failed: %w", err)
+		return nil, &fiber.Error{Code: 400, Message: fmt.Sprintf("database insert failed: %w", err)}
 	}
-
 	return entity, nil
 }
 

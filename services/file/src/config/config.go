@@ -26,11 +26,15 @@ type Configuration struct {
 var (
 	instance *Configuration
 	once     sync.Once
+	errInit  error
 )
 
 func GetConfig() *Configuration {
 	once.Do(func() {
-		godotenv.Load()
+		errInit = godotenv.Load()
+		if errInit != nil {
+			return
+		}
 		instance = &Configuration{
 			Port:                getPort(),
 			GRPCPort:            getEnv("GRPC_PORT", "5000"),
@@ -85,7 +89,7 @@ func getAutoMigrate() bool {
 }
 
 func getLocationMigrate() string {
-	return getEnv("MIGRATION_FILE_PATH", "file://src/database/migrations")
+	return "file://" + getEnv("MIGRATION_FILE_PATH", "src/database/migrations")
 }
 
 func isProduction() bool {
