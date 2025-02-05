@@ -1,0 +1,31 @@
+// version proto
+syntax = "proto3";
+
+// definisi package di golang 
+// jika protobuf digenerate, maka akan mengikuti structur seperti berikut
+option go_package = "model/product";
+
+// definisi package
+package product;
+
+// Request Payload
+message ProductRequest {
+    string ProductId = 1;
+}
+
+// Response Payload
+message ProductResponse {
+    string ProductId = 1;
+    string Name = 2;
+    string Qty = 3;
+    string Price = 4;
+    string Sku = 5;
+    string FileId = 6;
+}
+
+// Define RPC service
+service ProductService {
+    rpc GetProductDetailById(ProductRequest) returns (ProductResponse);
+}
+
+
