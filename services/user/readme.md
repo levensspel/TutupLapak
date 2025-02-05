@@ -1,5 +1,25 @@
 # TutupLapak User Service
 
+### Database Migrations using Golang-Migrate
+1. Create new migration scripts
+```
+migrate create -ext sql -dir src/database/migrations -seq new_migration_name
+```
+2. Migrate up (Replace the `user:password` & `dbname` with your setup)
+```
+migrate -path src/database/migrations -database "postgres://user:password@localhost:5432/dbname?sslmode=disable" up
+```
+3. Migrate down (Replace the `user:password` & `dbname` with your setup)
+```
+migrate -path src/database/migrations -database "postgres://user:password@localhost:5432/dbname?sslmode=disable" down 1
+```
+** Argument `down 1` is for 1 step rollback
+
+4. Check current migration version applied
+```
+migrate -path src/database/migrations -database "postgres://postgres@localhost:5432/tl_users?sslmode=disable" version
+```
+
 ### Build & Run the App
 Ensure make an `.env` file with values filling the keys from the `.env.example` file
 
