@@ -8,6 +8,7 @@ import (
 	functionCallerInfo "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/helper"
 	loggerZap "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/logger/zap"
 	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/request"
+	"github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/model/dtos/response"
 	fileService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/external/file"
 	userService "github.com/TIM-DEBUG-ProjectSprintBatch3/TutupLapak/user/src/services/user"
 	"github.com/gofiber/fiber/v2"
@@ -24,6 +25,8 @@ type UserControllerInterface interface {
 	LinkPhone(C *fiber.Ctx) error
 	GetUserProfile(C *fiber.Ctx) error
 	UpdateUserProfile(C *fiber.Ctx) error
+
+	GetUserProfileMany(C *fiber.Ctx) error
 }
 
 type UserController struct {
@@ -296,3 +299,40 @@ func (uc *UserController) UpdateUserProfile(ctx *fiber.Ctx) error {
 }
 
 // end User Profile
+
+func (uc *UserController) GetUserProfileMany(ctx *fiber.Ctx) error {
+	userIds := ctx.Query("userIds")
+
+	var userIdsList []string
+	s := 0
+	for i, c := range userIds {
+		if c == ',' {
+			userIdsList = append(userIdsList, userIds[s:i])
+			s = i + 1
+		} else if i == len(userIds)-1 {
+			userIdsList = append(userIdsList, userIds[s:])
+		}
+	}
+
+	res, err := uc.userService.GetUserProfiles(ctx.Context(), userIdsList)
+	if err != nil {
+		uc.logger.Error(err.Error(), functionCallerInfo.UserControllerGetUserProfile)
+		return ctx.Status(int(err.(exceptions.ErrorResponse).StatusCode)).JSON(err)
+	}
+
+	var result []response.UserResponse
+	// Populate the res with the data from user profiles.
+	for _, profile := range res {
+		userResponse := response.UserResponse{
+			Email:             profile.Email,
+			Phone:             profile.Phone,
+			BankAccountName:   profile.BankAccountName,
+			BankAccountHolder: profile.BankAccountHolder,
+			BankAccountNumber: profile.BankAccountNumber,
+		}
+		result = append(result, userResponse)
+	}
+
+	ctx.Set(helper.X_AUTHOR_HEADER_KEY, helper.X_AUTHOR_HEADER_VALUE)
+	return ctx.Status(fiber.StatusOK).JSON(result)
+}

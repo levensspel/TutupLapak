@@ -103,9 +103,9 @@ func (us *userService) RegisterByEmail(ctx context.Context, input request.AuthBy
 		return response.AuthResponse{}, exceptions.ErrServer(err.Error())
 	}
 
-	us.Cache.SetUserProfile(ctx, userId, &response.UserResponse{
-		Email: input.Email,
-	})
+	// us.Cache.SetUserProfile(ctx, userId, &response.UserResponse{
+	// 	Email: input.Email,
+	// })
 
 	return response.AuthResponse{
 		Email: input.Email,
@@ -183,10 +183,10 @@ func (us *userService) LoginByEmail(ctx context.Context, input request.AuthByEma
 		return response.AuthResponse{}, exceptions.ErrServer(err.Error())
 	}
 
-	us.Cache.SetUserProfile(ctx, auth.UserId, &response.UserResponse{
-		Email: input.Email,
-		Phone: auth.Phone,
-	})
+	// us.Cache.SetUserProfile(ctx, auth.UserId, &response.UserResponse{
+	// 	Email: input.Email,
+	// 	Phone: auth.Phone,
+	// })
 
 	return response.AuthResponse{
 		Email: input.Email,
@@ -292,18 +292,18 @@ func (us *userService) LinkPhone(ctx context.Context, input request.LinkPhoneReq
 }
 
 func (us *userService) GetUserProfile(ctx context.Context, userId string) (response.UserResponse, error) {
-	if cachedUser, ok := us.Cache.GetUserProfile(ctx, userId); ok {
-		return response.UserResponse{
-			Email:             cachedUser.Email,
-			Phone:             cachedUser.Phone,
-			FileId:            cachedUser.FileId,
-			FileUri:           cachedUser.FileUri,
-			FileThumbnailUri:  cachedUser.FileThumbnailUri,
-			BankAccountName:   cachedUser.BankAccountName,
-			BankAccountHolder: cachedUser.BankAccountHolder,
-			BankAccountNumber: cachedUser.BankAccountNumber,
-		}, nil
-	}
+	// if cachedUser, ok := us.Cache.GetUserProfile(ctx, userId); ok {
+	// 	return response.UserResponse{
+	// 		Email:             cachedUser.Email,
+	// 		Phone:             cachedUser.Phone,
+	// 		FileId:            cachedUser.FileId,
+	// 		FileUri:           cachedUser.FileUri,
+	// 		FileThumbnailUri:  cachedUser.FileThumbnailUri,
+	// 		BankAccountName:   cachedUser.BankAccountName,
+	// 		BankAccountHolder: cachedUser.BankAccountHolder,
+	// 		BankAccountNumber: cachedUser.BankAccountNumber,
+	// 	}, nil
+	// }
 
 	user, err := us.UserRepository.GetUserProfile(context.Background(), us.Db, userId)
 	if err != nil {
@@ -338,17 +338,17 @@ func (us *userService) UpdateUserProfile(ctx context.Context, input request.Upda
 	}
 
 	if input.FileId != "" {
-		var file *service.File
+		var file service.File
 
-		file, ok := us.Cache.GetFile(ctx, input.FileId)
+		// file, ok := us.Cache.GetFile(ctx, input.FileId)
+		// if !ok {
+		file, ok := us.fileService.GetFile(ctx, input.FileId)
+
 		if !ok {
-			*file, ok = us.fileService.GetFile(ctx, input.FileId)
-
-			if !ok {
-				// *Logging is done in the fileService implementation
-				return response.UserResponse{}, exceptions.NewErrorResponse(fiber.StatusBadRequest, "Bad request")
-			}
+			// *Logging is done in the fileService implementation
+			return response.UserResponse{}, exceptions.NewErrorResponse(fiber.StatusBadRequest, "Bad request")
 		}
+		// }
 
 		updateUser.FileId = &input.FileId
 		updateUser.FileUri = &file.FileUri

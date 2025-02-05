@@ -16,4 +16,6 @@ func SetRouteUsers(router fiber.Router, uc userController.UserControllerInterfac
 	router.Post("/user/link/phone", middlewares.AuthMiddleware, uc.LinkPhone)
 	router.Get("/user", middlewares.AuthMiddleware, uc.GetUserProfile)
 	router.Put("/user", middlewares.AuthMiddleware, uc.UpdateUserProfile)
+
+	router.Get("/user/many", middlewares.AuthMiddleware, uc.GetUserProfileMany)
 }
