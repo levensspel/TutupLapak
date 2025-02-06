@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/TimDebug/TutupLapak/File/src/cache"
 	conf "github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/TimDebug/TutupLapak/File/src/models"
@@ -26,13 +27,15 @@ type FileService struct {
 	Repo          repo.FileRepository
 	StorageClient StorageClient
 	wp            *wpool.WorkerPool
+	redis         *cache.RedisClient
 }
 
-func NewFileService(repo repo.FileRepository, storageClient StorageClient) FileService {
+func NewFileService(repo repo.FileRepository, storageClient StorageClient, redis *cache.RedisClient) FileService {
 	return FileService{
 		Repo:          repo,
 		StorageClient: storageClient,
 		wp:            wpool.New(runtime.NumCPU() * 3),
+		redis:         redis,
 	}
 }
 
@@ -66,6 +69,7 @@ func (fs *FileService) UploadFile(
 	if err != nil {
 		return nil, &fiber.Error{Code: 400, Message: fmt.Sprintf("database insert failed: %w", err)}
 	}
+	fs.redis.Set(ctx.Context(), entity) // ignoring the error
 	return entity, nil
 }
 
