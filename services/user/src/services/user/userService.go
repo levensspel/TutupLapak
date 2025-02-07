@@ -33,8 +33,8 @@ type UserServiceInterface interface {
 	GetUserProfile(ctx context.Context, userId string) (response.UserResponse, error)
 	UpdateUserProfile(ctx context.Context, input request.UpdateUserProfileRequest, userId string) (response.UserResponse, error) //for grpc
 
-	GetUserProfiles(ctx context.Context, userId []string) ([]response.UserResponse, error)
-	GetUserProfilesWithId(ctx context.Context, userId []string) ([]response.UserWithIdResponse, error)
+	GetUserProfiles(ctx context.Context, userIds []string) ([]response.UserResponse, error)
+	GetUserProfilesWithId(ctx context.Context, userIds []string) ([]response.UserWithIdResponse, error)
 }
 
 type userService struct {
@@ -375,8 +375,41 @@ func (us *userService) UpdateUserProfile(ctx context.Context, input request.Upda
 	return response, nil
 }
 
-func (us *userService) GetUserProfiles(ctx context.Context, userId []string) ([]response.UserResponse, error) {
-	users, err := us.UserRepository.GetUserProfiles(ctx, us.Db, userId)
+func (us *userService) GetUserProfiles(ctx context.Context, userIds []string) ([]response.UserResponse, error) {
+	var keyStr []string
+	for _, id := range userIds {
+		keyStr = append(keyStr, "user:"+id)
+	}
+	cachedUsers, missedUserIds, ok := us.Cache.MGetUserProfiles(ctx, keyStr)
+
+	var resp []response.UserResponse
+	if ok {
+		for _, user := range cachedUsers {
+			resp = append(resp, response.UserResponse{
+				Email:             user.Email,
+				Phone:             user.Phone,
+				FileId:            user.FileId,
+				FileUri:           user.FileUri,
+				FileThumbnailUri:  user.FileThumbnailUri,
+				BankAccountName:   user.BankAccountName,
+				BankAccountHolder: user.BankAccountHolder,
+				BankAccountNumber: user.BankAccountNumber,
+			})
+		}
+
+		if len(missedUserIds) == 0 {
+			return resp, nil
+		}
+	}
+
+	var queryIds []string
+	if len(missedUserIds) > 0 {
+		queryIds = missedUserIds
+	} else {
+		queryIds = userIds
+	}
+
+	users, err := us.UserRepository.GetUserProfiles(ctx, us.Db, queryIds)
 
 	if err != nil {
 		statusCode, message := helper.MapPgxError(err)
@@ -390,11 +423,30 @@ func (us *userService) GetUserProfiles(ctx context.Context, userId []string) ([]
 		return nil, exceptions.NewBadRequestError(fiber.ErrBadRequest.Message, fiber.StatusBadRequest)
 	}
 
-	return users, nil
+	resp = append(resp, users...)
+
+	return resp, nil
 }
 
-func (us *userService) GetUserProfilesWithId(ctx context.Context, userId []string) ([]response.UserWithIdResponse, error) {
-	users, err := us.UserRepository.GetUserProfilesWithId(ctx, us.Db, userId)
+func (us *userService) GetUserProfilesWithId(ctx context.Context, userIds []string) ([]response.UserWithIdResponse, error) {
+	var keyStr []string
+	for _, id := range userIds {
+		keyStr = append(keyStr, "user:"+id)
+	}
+	cachedUsers, missedUserIds, ok := us.Cache.MGetUserProfiles(ctx, keyStr)
+	if ok {
+		if len(missedUserIds) == 0 {
+			return cachedUsers, nil
+		}
+	}
+
+	var queryIds []string
+	if len(missedUserIds) > 0 {
+		queryIds = missedUserIds
+	} else {
+		queryIds = userIds
+	}
+	users, err := us.UserRepository.GetUserProfilesWithId(ctx, us.Db, queryIds)
 
 	if err != nil {
 		statusCode, message := helper.MapPgxError(err)
@@ -408,5 +460,9 @@ func (us *userService) GetUserProfilesWithId(ctx context.Context, userId []strin
 		return nil, exceptions.NewBadRequestError(fiber.ErrBadRequest.Message, fiber.StatusBadRequest)
 	}
 
-	return users, nil
+	us.Cache.MSetUserProfiles(ctx, users)
+
+	cachedUsers = append(cachedUsers, users...)
+
+	return cachedUsers, nil
 }
