@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/TimDebug/TutupLapak/File/src/config"
+	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/TimDebug/TutupLapak/File/src/models"
 	"github.com/redis/go-redis/v9"
 )
@@ -33,6 +34,14 @@ func NewRedisClient() *RedisClient {
 			}),
 		}
 	})
+
+	// ping the client
+	ctx := context.Background()
+	_, err := redisInstance.client.Ping(ctx).Result()
+	if err != nil {
+		logger.Logger.Fatal().Err(err).Msg("failed to connect to redis")
+	}
+
 	return redisInstance
 }
 

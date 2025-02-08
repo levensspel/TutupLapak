@@ -11,7 +11,6 @@ import (
 
 	"github.com/TimDebug/TutupLapak/File/src/cache"
 	conf "github.com/TimDebug/TutupLapak/File/src/config"
-	"github.com/TimDebug/TutupLapak/File/src/logger"
 	"github.com/TimDebug/TutupLapak/File/src/models"
 	"github.com/TimDebug/TutupLapak/File/src/repo"
 	"github.com/disintegration/imaging"
@@ -69,13 +68,12 @@ func (fs *FileService) UploadFile(
 	if err != nil {
 		return nil, &fiber.Error{Code: 400, Message: fmt.Sprintf("database insert failed: %w", err)}
 	}
-	fs.redis.Set(ctx.Context(), entity) // ignoring the error
+	fs.redis.Set(ctx.Context(), entity) // disregards error result
 	return entity, nil
 }
 
 func (fs *FileService) compressImage(content []byte) ([]byte, error) {
 	img, format, err := fs.decodeImage(content)
-	logger.Logger.Info().Str("format", format).Msg("cek doang")
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +85,6 @@ func (fs *FileService) compressImage(content []byte) ([]byte, error) {
 func (fs *FileService) imageToBytes(img image.Image, fileExt string) ([]byte, error) {
 	var buf bytes.Buffer
 	var err error
-	logger.Logger.Info().Str("file_ext", fileExt).Msg("cek file eks")
 	if strings.ToLower(fileExt) == "png" {
 		err = imaging.Encode(&buf, img, imaging.PNG)
 	} else {
