@@ -21,6 +21,8 @@ type Configuration struct {
 	AWSSecretAccessKey  string
 	AWSRegion           string
 	AWSBucket           string
+	RedisHost           string
+	RedisPort           string
 }
 
 var (
@@ -47,6 +49,8 @@ func GetConfig() *Configuration {
 			AWSSecretAccessKey:  getEnv("AWS_SECRET_ACCESS_KEY", ""),
 			AWSRegion:           getEnv("AWS_REGION", ""),
 			AWSBucket:           getEnv("AWS_BUCKET", ""),
+			RedisHost:           getEnv("REDIS_HOST", ""),
+			RedisPort:           getEnv("REDIS_PORT", ""),
 		}
 	})
 	return instance

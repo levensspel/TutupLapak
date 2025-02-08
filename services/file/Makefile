@@ -19,4 +19,10 @@ migrate_down:
 clean_uploads:
 	find .uploads -type f -delete
 
+doc_build:
+	docker build -t file-service .
+
+doc_run:
+	docker run --rm -it -p 3003:3003 -p 5003:5003 --network demo-network file-service
+
 .PHONY: run create_migration migrate_up migrate_down clean_uploads

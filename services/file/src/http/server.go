@@ -3,6 +3,7 @@ package httpServer
 import (
 	"fmt"
 
+	"github.com/TimDebug/TutupLapak/File/src/cache"
 	"github.com/TimDebug/TutupLapak/File/src/config"
 	"github.com/TimDebug/TutupLapak/File/src/http/middleware/errorHandler"
 	"github.com/TimDebug/TutupLapak/File/src/http/middleware/identifier"
@@ -38,7 +39,8 @@ func (s *HttpServer) Listen() {
 		storageClient = NewMockS3StorageClient()
 	}
 	repo := repo.NewFileRepository(s.DB)
-	service := NewFileService(repo, storageClient)
+	redis := cache.NewRedisClient()
+	service := NewFileService(repo, storageClient, redis)
 	defer service.Shutdown()
 	controller := NewFileController(service)
 

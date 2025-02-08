@@ -1,6 +1,8 @@
 FROM golang:1.23.4 AS build
 LABEL maintainer="rbennum"
 WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
 RUN GOOS=linux go build -o file-svc .
 
