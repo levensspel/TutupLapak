@@ -18,7 +18,7 @@ func (d RedisCacheClient) set(ctx context.Context, key string, value string) err
 func (d RedisCacheClient) setAsMap(ctx context.Context, key string, value map[string]string) error {
 	data, err := sonic.Marshal(value)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	_, err = d.client.Set(ctx, key, string(data), DefaultCacheTtl).Result()
