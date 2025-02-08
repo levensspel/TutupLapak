@@ -1,0 +1,28 @@
+# The manifest for the "staging" environment.
+# Read the full specification for the "Environment" type at:
+#  https://aws.github.io/copilot-cli/docs/manifest/environment/
+
+# Your environment name will be used in naming your resources like VPC, cluster, etc.
+name: staging
+type: Environment
+
+# Import your own VPC and subnets or configure how they should be created.
+network:
+  vpc:
+    id: vpc-0a17e75ca029d7293
+    subnets:
+      public:
+        - id: subnet-034cc76393f7ae314
+        - id: subnet-0af9ee19c930ab38a
+      private:
+        - id: subnet-0bfa16281c4e9df40
+        - id: subnet-0d749e9461f70bf86
+
+# Configure the load balancers in your environment, once created.
+# http:
+#   public:
+#   private:
+
+# Configure observability for your environment resources.
+observability:
+  container_insights: false
