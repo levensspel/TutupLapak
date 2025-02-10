@@ -56,7 +56,7 @@ variables:                    # Pass environment variables as key value pairs.
  REDIS_PASSWORD: ${REDIS_PASSWORD}
  REDIS_DB_COUNT: ${REDIS_DB_COUNT}
 
- FILE_SERVICE_BASE_URL: http://file-service.${COPILOT_SERVICE_DISCOVERY_ENDPOINT}
+ FILE_SERVICE_BASE_URL: ${USER_SVC_FILE_SERVICE_BASE_URL}
  JWT_SECRET_KEY: ${USER_SVC_JWT_SECRET_KEY}
 
 logging:
