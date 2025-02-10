@@ -1,0 +1,71 @@
+# The manifest for the "user-service" service.
+# Read the full specification for the "Backend Service" type at:
+#  https://aws.github.io/copilot-cli/docs/manifest/backend-service/
+
+# Your service name will be used in naming your resources like log groups, ECS services, etc.
+name: user-service
+type: Backend Service
+
+# Your service does not allow any traffic.
+
+# Configuration for your containers and service.
+image:
+  # Docker build arguments. For additional overrides: https://aws.github.io/copilot-cli/docs/manifest/backend-service/#image-build
+  build: services/user/Dockerfile
+  port: 8080
+
+http:
+  path: "/"
+  healthcheck:
+    path: '/'
+    port: 8080
+    success_codes: '200'
+    healthy_threshold: 3
+    unhealthy_threshold: 2
+    interval: 15s
+    timeout: 10s
+    grace_period: 60s
+
+grpc:
+  port: 50051
+
+cpu: 256       # Number of CPU units for the task.
+memory: 512    # Amount of memory in MiB used by the task.
+count: 1       # Number of tasks that should be running in your service.
+exec: true     # Enable running commands in your container.
+
+variables:                    # Pass environment variables as key value pairs.
+ LOG_LEVEL: ${USER_SVC_LOG_LEVEL}
+ 
+ MODE: ${USER_SVC_MODE}
+ PORT: ${USER_SVC_PORT}
+ GRPC_PORT: ${USER_SVC_GRPC_PORT}
+ 
+ DB_USER: ${USER_SVC_DB_USER}
+ DB_PASSWORD: ${USER_SVC_DB_PASSWORD}
+ DB_HOST: ${USER_SVC_DB_HOST}
+ DB_PORT: ${USER_SVC_DB_POT}
+ DB_NAME: ${USER_SVC_DB_NAME}
+ DB_MAX_CONN_PERCENTAGE: ${USER_SVC_DB_MAX_CONN_PERCENTAGE}
+
+ MIGRATION_FILE_PATH: ${USER_SVC_MIGRATION_FILE_PATH}
+ ENABLE_AUTO_MIGRATE: ${USER_SVC_ENABLE_AUTO_MIGRATE}
+ 
+ REDIS_HOST: ${REDIS_HOST}
+ REDIS_PORT: ${REDIS_PORT}
+ REDIS_PASSWORD: ${REDIS_PASSWORD}
+ REDIS_DB_COUNT: ${REDIS_DB_COUNT}
+
+ FILE_SERVICE_BASE_URL: http://file-service.${COPILOT_SERVICE_DISCOVERY_ENDPOINT}
+ JWT_SECRET_KEY: ${USER_SVC_JWT_SECRET_KEY}
+
+logging:
+  retention: 7 # days
+
+tags:
+  project: projectsprint
+  environment: staging
+  team_name: tim-debug
+
+network:
+  connect: true # allow connection from
