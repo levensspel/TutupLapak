@@ -44,7 +44,7 @@ variables:                    # Pass environment variables as key value pairs.
  DB_USER: ${USER_SVC_DB_USER}
  DB_PASSWORD: ${USER_SVC_DB_PASSWORD}
  DB_HOST: ${USER_SVC_DB_HOST}
- DB_PORT: ${USER_SVC_DB_POT}
+ DB_PORT: ${USER_SVC_DB_PORT}
  DB_NAME: ${USER_SVC_DB_NAME}
  DB_MAX_CONN_PERCENTAGE: ${USER_SVC_DB_MAX_CONN_PERCENTAGE}
 
