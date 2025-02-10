@@ -32,14 +32,5 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env . 
 
-# Tentukan argumen untuk port
-ARG PORT
-
-# Set port sebagai environment variable
-ENV PORT=${PORT}
-
-# Tentukan port yang akan diekspos
-EXPOSE ${PORT}
-
 # Command to run the executable
-CMD [".build/main"] 
+CMD ["./main"] 
