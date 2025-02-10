@@ -16,9 +16,13 @@ func main() {
 	fmt.Printf("Load ENV\n")
 	err := godotenv.Load()
 	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = config.SetupReusableEnv()
+	if err != nil {
 		panic(err)
 	}
-	config.SetupReusableEnv()
 
 	fmt.Printf("DI Healthcheck\n")
 	di.HealthCheck()

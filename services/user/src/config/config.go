@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strconv"
 )
@@ -13,16 +14,18 @@ const (
 	MODE_PRODUCTION        = "PRODUCTION"
 )
 
-func SetupReusableEnv() {
+func SetupReusableEnv() error {
 	FILE_SERVICE_BASE_URL = getFileServiceBaseURL()
 	if FILE_SERVICE_BASE_URL == "" {
-		panic("FILE_SERVICE_BASE_URL value requires to be set")
+		return errors.New("FILE_SERVICE_BASE_URL value requires to be set")
 	}
 
 	MODE = getMode()
 	if MODE == "" {
-		panic("MODE value requires to be set")
+		return errors.New("MODE value requires to be set")
 	}
+
+	return nil
 }
 
 func getEnv(key string, defaultValue string) string {
