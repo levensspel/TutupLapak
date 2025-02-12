@@ -1,5 +1,3 @@
-# Dockerfile References: https://docs.docker.com/engine/reference/builder/
-
 # Start from the latest golang base image
 FROM golang:1.23.5 as builder
 
@@ -19,18 +17,26 @@ RUN go mod download
 COPY . .
 
 # Build the Go app for ARM architecture
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -installsuffix cgo -o main .
 
 ######## Start a new stage from scratch #######
-FROM alpine:3.21.2  
+FROM debian:12-slim
 
-RUN apk --no-cache add ca-certificates
+# Install certificates
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
+# Set the working directory
 WORKDIR /root/
 
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/main .
-COPY --from=builder /app/.env . 
+COPY --from=builder /app/.env .
+
+# HTTP Port
+EXPOSE 8080
+
+# gRPC port
+EXPOSE 50051
 
 # Command to run the executable
-CMD ["./main"] 
+CMD ["./main"]

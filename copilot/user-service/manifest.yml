@@ -15,9 +15,9 @@ image:
   port: 8080
 
 http:
-  path: "/"
+  path: '/'
   healthcheck:
-    path: '/'
+    path: '/health'
     port: 8080
     success_codes: '200'
     healthy_threshold: 3
